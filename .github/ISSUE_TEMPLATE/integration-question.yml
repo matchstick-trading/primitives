@@ -1,0 +1,26 @@
+name: Integration question
+description: How do I fit the parts into my framework, data shape or build?
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: Describe your setup in general terms. No company names, customer details or real data needed.
+  - type: dropdown
+    id: framework
+    attributes:
+      label: What are you integrating into?
+      options: [React, Plain TypeScript or JavaScript, Vue, Svelte, Angular, Something else]
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What you're trying to do, and where you got stuck.
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: Your data shape (optional)
+      description: "A made-up record is enough, for example { timestamp, open, high, low, close, volume }."

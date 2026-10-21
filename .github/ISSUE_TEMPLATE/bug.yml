@@ -1,0 +1,35 @@
+name: Bug
+description: A part, demo or doc page does something it shouldn't.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Use synthetic or made-up data. Don't paste real account data, customer details, keys or licence tokens.
+  - type: input
+    id: part
+    attributes:
+      label: Which part or page?
+      placeholder: "Chart.Plot, or https://ui.matchstick.trading/docs/drawings"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest example you can, with made-up bars if data matters.
+  - type: input
+    id: version
+    attributes:
+      label: Kit version, or "docs site"
+      placeholder: "0.0.1"
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and framework
+      placeholder: "Firefox 155, React 19, Vite 6"

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Docs and live demos
+    url: https://ui.matchstick.trading
+    about: Most questions are answered by a page and its example.
+  - name: Get the source kit
+    url: https://ui.matchstick.trading/get-the-kit
+    about: For the kit itself, send a short note instead of opening an issue.
