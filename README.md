@@ -11,8 +11,11 @@ parts sit on top of it.
 
 ## What this repository is for
 
-This repository holds the issue tracker and these notes. It does not hold the source yet: the source kit is shared
-by request while its written licence is drafted. See [Get the kit](https://ui.matchstick.trading/get-the-kit).
+This repository holds the issue tracker and these notes. It does not hold the source.
+
+No licence yet. Lawyers cost money and this is a one-person company, so the terms are coming once we can afford to write them properly. Until then, read the docs and try the playground, and the source stays with us.
+
+What you may do today: evaluate the docs and the playground. Using the source is not allowed yet.
 
 Open an issue to:
 
