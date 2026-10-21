@@ -11,7 +11,7 @@ parts sit on top of it.
 
 ## What this repository is for
 
-This repository holds the issue tracker and these notes. It does not hold the source.
+This repository holds the issue tracker, these notes and small teaching examples. It does not hold the kit's source.
 
 No licence yet. Lawyers cost money and this is a one-person company, so the terms are coming once we can afford to write them properly. Until then, read the docs and try the playground, and the source stays with us.
 
@@ -21,6 +21,14 @@ Open an issue to:
 
 - report a bug in a part, a demo or the docs, or
 - ask an integration question: how to fit the parts into your framework, your data shape or your build.
+
+## Examples
+
+`examples/` holds small teaching examples written for this repository, each MIT-licensed under its own `LICENSE`
+file. That licence covers only the example folder it sits in; the primitives kit is still not licensed.
+
+- [Symbol ranking](examples/symbol-ranking): one way to rank symbol-search results, in plain TypeScript.
+  [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/symbol-ranking), no account needed.
 
 ## Version and supported scope
 

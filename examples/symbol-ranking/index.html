@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Symbol ranking</title>
+  <link rel="icon" href="data:," />
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 34rem; margin: 2rem auto; padding: 0 16px; }
+    input { font: inherit; width: 100%; padding: 8px; box-sizing: border-box; }
+    li { font-family: ui-monospace, monospace; white-space: pre; }
+    button { font: inherit; margin: 0 4px 4px 0; }
+  </style>
+</head>
+<body>
+  <h1>Symbol ranking</h1>
+  <p>Exact symbol, then symbol prefix, then exact alias, then a name word. Ties: shorter symbol, then A to Z. Made-up data.</p>
+  <label for="q">Search</label>
+  <input id="q" autocomplete="off" spellcheck="false" />
+  <p>Try:
+    <button data-try="acme">acme</button><button data-try="ac">ac</button><button data-try="blue">blue</button><button data-try="ridge">ridge</button><button data-try="north rail">north rail</button><button data-try="acmr">acmr</button>
+  </p>
+  <ol id="results" aria-live="polite"></ol>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

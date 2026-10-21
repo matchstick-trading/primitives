@@ -1,0 +1,7 @@
+{
+  "name": "symbol-ranking",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "devDependencies": { "typescript": "5.8.3", "vite": "6.4.1" }
+}
