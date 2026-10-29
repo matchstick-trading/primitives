@@ -6,7 +6,7 @@ parts sit on top of it.
 
 **Docs and live demos:** https://ui.matchstick.trading
 
-> **Developer preview, v0.0.1.** Parts, names and data shapes can change in the next version without a migration
+> **Developer preview, v0.0.5.** Parts, names and data shapes can change in the next version without a migration
 > path. Nothing here promises later versions, updates or support.
 
 ## What this repository is for
@@ -32,13 +32,13 @@ file. That licence covers only the example folder it sits in; the primitives kit
 
 ## Version and supported scope
 
-v0.0.1. What was run and checked, and what wasn't yet, is listed on
+v0.0.5. What was run and checked, and what wasn't yet, is listed on
 [Supported scope](https://ui.matchstick.trading/docs/supported). In short:
 
 - React 19.2 and 18.3.1 for the React parts; the core needs no framework.
-- Checked in Chrome 151 and Firefox 155 on desktop Linux. Safari, mobile browsers, touch and screen readers are
-  not checked yet.
-- Times are shown in UTC. One price pane with volume; no separate oscillator pane yet.
+- Checked in Chrome 151 and Firefox 155 on desktop Linux, and touch by emulation. Real Safari on an iPad was run for
+  0.0.4 only; 0.0.5 has not been run on real Safari. Phone browsers and screen readers are not checked yet.
+- Times are shown in UTC. The bars and volume share one price pane; other series can have their own panes (opt-in).
 
 ## Reporting an issue
 
