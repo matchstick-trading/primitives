@@ -37,8 +37,10 @@ v0.0.10. What was run and checked, and what wasn't yet, is listed on
 [Supported scope](https://ui.matchstick.trading/docs/supported). In short:
 
 - React 19.2 and 18.3.1 for the React parts; the core needs no framework.
-- Checked in Chrome 151 and Firefox 155 on desktop Linux, and touch by emulation. Real Safari on an iPad was run for
-  0.0.4 only; 0.0.5 has not been run on real Safari. Phone browsers and screen readers are not checked yet.
+- 0.0.10 was checked in Chromium on desktop Linux: the test suite, and the live demo in a real browser. Earlier
+  previews were also checked in Chrome 151 and Firefox 155 on desktop Linux, and touch by emulation.
+- Real Safari on an iPad was run for 0.0.4 only. Nothing since, including 0.0.10, has been run on real Safari.
+  Phone browsers and screen readers are not checked yet.
 - Times are shown in UTC. The bars and volume share one price pane; other series can have their own panes (opt-in).
 
 ## Reporting an issue
