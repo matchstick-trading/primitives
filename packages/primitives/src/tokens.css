@@ -1,0 +1,235 @@
+/*
+ * Design tokens for the trader primitives. Import once; override any custom property on a
+ * parent element. Parts read these tokens and the data attributes in attributes.ts, never a class name.
+ * Every rule is scoped to elements that carry `data-mt` (primitiveAttributes adds it), so importing this file
+ * never restyles host markup that happens to use a similar data attribute.
+ *
+ * Default palette is colour-blind safe: bid is blue, ask is orange (distinguishable under deuteranopia,
+ * protanopia and tritanopia), and direction is ALSO carried by a mark (B/A, up/down arrows) so colour is never
+ * the only signal (WCAG 1.4.1). Set data-palette="classic" on a parent for green/red.
+ */
+:root {
+  /* The smallest touch target: parts and docs raise controls to this on coarse pointers (phones, tablets). Override to taste. */
+  --mt-touch-target: 44px;
+  /* design-tokens:begin generated from the Matchstick design tokens; do not edit between the markers */
+  /* The surface the colour tokens below are tuned for (dark here, white in the light preset). The parts do not paint it; set it on your own background so the two stay together. */
+  --mt-surface: #12151c;
+  /* Fullscreen.Frame while expanded: the text colour on that background (light here; dark under data-theme='light'). The labels, readout and host text inherit it. */
+  --mt-fullscreen-fg: #e8eaef;
+  --mt-bid: #4aa3ff;
+  --mt-ask: #ff9f43;
+  --mt-up: #4aa3ff;
+  --mt-down: #ff9f43;
+  --mt-flat: #8c93a3;
+  --mt-warn: #ffc247;
+  --mt-error: #ff6b6b;
+  /* Buttons that remove things (Drawings.Remove). A button also says what it does in words, so colour is never the only cue. */
+  --mt-destructive: #ff6b6b;
+  --mt-synthetic: #b48cff;
+  --mt-cursor-a: #4aa3ff;
+  --mt-cursor-b: #ff9f43;
+  --mt-focus: #ff2a85;
+  --mt-font-numeric: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* design-tokens:end */
+  /* Fullscreen.Frame while expanded: its background (the surface by default; the browser's own full screen would paint black) and, in the in-page fallback, its stacking order. */
+  --mt-fullscreen-bg: var(--mt-surface);
+  --mt-fullscreen-z: 2147483000;
+  /* Marks that carry meaning without colour. Override to change the glyph or text. */
+  --mt-mark-bid: 'B';
+  --mt-mark-ask: 'A';
+  --mt-mark-up: '▲';
+  --mt-mark-down: '▼';
+  --mt-mark-flat: '–';
+  --mt-mark-added: ' +';
+  --mt-mark-removed: ' −';
+  --mt-mark-modified: ' ±';
+  --mt-mark-gap: ' gap';
+  --mt-mark-stale: ' stale';
+  --mt-mark-truncated: ' truncated';
+  --mt-mark-synthetic: ' synthetic';
+  /* Drawing state looks. The base token is the passive state; -active is a drawing being drawn or moved; -selected is the picked one.
+     -locked applies to a locked drawing and falls back to its state's value. Width is an SVG stroke width, dash is a stroke-dasharray ('none' is solid). */
+  --mt-drawing-width: 1.25;
+  --mt-drawing-width-active: 2.25;
+  --mt-drawing-width-selected: 2.75;
+  --mt-drawing-dash: none;
+  --mt-drawing-dash-active: 6 4;
+  --mt-drawing-dash-selected: none;
+  /* The anchor circles of the selected drawing; -dragging is the one under the pointer. */
+  --mt-drawing-handle-width: 1.5;
+  --mt-drawing-handle-width-dragging: 3;
+}
+
+/*
+ * Light preset: put data-theme='light' on any element (or <html>) over a white-ish surface. Every colour token is rebound
+ * so text-like marks reach 4.5:1 and the focus ring and cursor edges reach 3:1 against --mt-surface (table in the README).
+ * Keep any data-palette on the same element or inside it; data-palette='classic' has a light variant below.
+ */
+[data-theme='light'] {
+  --mt-surface: #ffffff;
+  --mt-fullscreen-bg: var(--mt-surface);
+  --mt-fullscreen-fg: #14141c;
+  --mt-bid: #1f6fd1;
+  --mt-ask: #a64f00;
+  --mt-up: #1f6fd1;
+  --mt-down: #a64f00;
+  --mt-flat: #5f5f70;
+  --mt-warn: #8a5a00;
+  --mt-error: #c0243f;
+  --mt-destructive: #c0243f;
+  --mt-synthetic: #7a3fd0;
+  --mt-cursor-a: #1f6fd1;
+  --mt-cursor-b: #a64f00;
+  --mt-focus: #a86400;
+}
+
+/* Custom properties resolve where they are declared, so every token that follows the sides is rebound here. */
+[data-palette='classic'] {
+  --mt-bid: #00c87a;
+  --mt-ask: #ff4d6a;
+  --mt-up: #00c87a;
+  --mt-down: #ff4d6a;
+  --mt-cursor-a: #00c87a;
+  --mt-cursor-b: #ff4d6a;
+}
+[data-theme='light'][data-palette='classic'],
+[data-theme='light'] [data-palette='classic'] {
+  --mt-bid: #0a7a4f;
+  --mt-ask: #c0243f;
+  --mt-up: #0a7a4f;
+  --mt-down: #c0243f;
+  --mt-cursor-a: #0a7a4f;
+  --mt-cursor-b: #c0243f;
+}
+
+/*
+ * Numeric text: tabular figures keep each digit the same width, but a value that gains a digit (99.99 to 100.00)
+ * still grows. Reserve the widest value: set --mt-numeric-width (for example from numericWidth()) on the column.
+ */
+[data-mt-numeric] {
+  font-family: var(--mt-font-numeric);
+  font-variant-numeric: tabular-nums;
+  min-inline-size: var(--mt-numeric-width, 0);
+}
+
+[data-mt][data-side='bid'] { color: var(--mt-bid); }
+[data-mt][data-side='ask'] { color: var(--mt-ask); }
+[data-mt][data-side='bid']::before { content: var(--mt-mark-bid); margin-inline-end: 0.35em; font-size: 0.75em; }
+[data-mt][data-side='ask']::before { content: var(--mt-mark-ask); margin-inline-end: 0.35em; font-size: 0.75em; }
+
+/* A trade on the tape: the aggressor's side. Blue and orange as the book's sides, with an arrow so it never rests on colour. */
+[data-mt][data-tape-side='buy'] { color: var(--mt-bid); }
+[data-mt][data-tape-side='sell'] { color: var(--mt-ask); }
+[data-mt][data-tape-side='buy']::before { content: var(--mt-mark-up); margin-inline-end: 0.35em; font-size: 0.75em; }
+[data-mt][data-tape-side='sell']::before { content: var(--mt-mark-down); margin-inline-end: 0.35em; font-size: 0.75em; }
+
+/* The ladder's size bars: a wash of the side's colour as wide as --mt-bar (0 to 1), growing from the right edge of the cell. */
+[data-mt][data-ladder-bar='bid'] { background: linear-gradient(to left, color-mix(in srgb, var(--mt-bid) 26%, transparent) calc(var(--mt-bar, 0) * 100%), transparent 0); }
+[data-mt][data-ladder-bar='ask'] { background: linear-gradient(to left, color-mix(in srgb, var(--mt-ask) 26%, transparent) calc(var(--mt-bar, 0) * 100%), transparent 0); }
+
+[data-mt][data-change='up'] { color: var(--mt-up); }
+[data-mt][data-change='down'] { color: var(--mt-down); }
+[data-mt][data-change='flat'] { color: var(--mt-flat); }
+[data-mt][data-diff='added'] { color: var(--mt-up); }
+[data-mt][data-diff='removed'] { color: var(--mt-down); }
+[data-mt][data-diff='modified'] { color: var(--mt-flat); }
+[data-mt][data-quality='gap'],
+[data-mt][data-quality='stale'],
+[data-mt][data-quality='truncated'] { color: var(--mt-warn); }
+[data-mt][data-verdict='mismatch'] { color: var(--mt-warn); }
+
+/* Custom properties inherit, so each primitive first clears the marks it would otherwise take from a parent primitive. */
+[data-mt] {
+  --mt-after-change: initial;
+  --mt-after-diff: initial;
+  --mt-after-quality: initial;
+  --mt-after-synthetic: initial;
+}
+[data-mt][data-synthetic] { --mt-after-synthetic: var(--mt-mark-synthetic); }
+
+/* Each state sets its own mark; one ::after joins the ones present, so states can coexist without overriding each other. */
+[data-mt][data-change='up'] { --mt-after-change: var(--mt-mark-up); }
+[data-mt][data-change='down'] { --mt-after-change: var(--mt-mark-down); }
+[data-mt][data-change='flat'] { --mt-after-change: var(--mt-mark-flat); }
+[data-mt][data-diff='added'] { --mt-after-diff: var(--mt-mark-added); }
+[data-mt][data-diff='removed'] { --mt-after-diff: var(--mt-mark-removed); }
+[data-mt][data-diff='modified'] { --mt-after-diff: var(--mt-mark-modified); }
+[data-mt][data-quality='gap'] { --mt-after-quality: var(--mt-mark-gap); }
+[data-mt][data-quality='stale'] { --mt-after-quality: var(--mt-mark-stale); }
+[data-mt][data-quality='truncated'] { --mt-after-quality: var(--mt-mark-truncated); }
+[data-mt][data-change]::after,
+[data-mt][data-diff]::after,
+[data-mt][data-quality]:not([data-quality='ok'])::after,
+[data-mt][data-synthetic]::after {
+  content: var(--mt-after-change, '') var(--mt-after-diff, '') var(--mt-after-quality, '') var(--mt-after-synthetic, '');
+  margin-inline-start: 0.35em;
+  font-size: 0.75em;
+}
+/* The marks of a synthetic value follow --mt-synthetic. */
+[data-mt][data-synthetic]::after { color: var(--mt-synthetic); }
+
+/* Cursors differ by edge, not only colour: A is marked on the leading edge, B on the trailing edge. */
+[data-mt][data-cursor='a'] { box-shadow: inset 3px 0 0 var(--mt-cursor-a); }
+[data-mt][data-cursor='b'] { box-shadow: inset -3px 0 0 var(--mt-cursor-b); }
+/* Leading and trailing swap with the writing direction. */
+[data-mt][data-cursor='a']:dir(rtl) { box-shadow: inset -3px 0 0 var(--mt-cursor-a); }
+[data-mt][data-cursor='b']:dir(rtl) { box-shadow: inset 3px 0 0 var(--mt-cursor-b); }
+/* Forced colours drop box-shadow, so the edges become borders: A solid, B dashed, so they still differ without colour. */
+@media (forced-colors: active) {
+  :where([data-mt][data-cursor='a']) { box-shadow: none; border-inline-start: 3px solid CanvasText; }
+  :where([data-mt][data-cursor='b']) { box-shadow: none; border-inline-end: 3px dashed CanvasText; }
+}
+
+:where([data-mt-focusable], tr[data-diff-row], [data-mt][data-verdict] code[tabindex]):focus-visible { outline: 2px solid var(--mt-focus); outline-offset: -2px; }
+
+/* Drawing states, from the tokens above. :where() keeps the specificity at zero, so any rule of yours wins without a fight. */
+:where([data-mt][data-part='drawing'] [data-part='drawing-line'], [data-mt][data-part='drawing'] [data-part='drawing-box'], [data-mt][data-part='drawing'] [data-part='drawing-level'] line, [data-mt][data-part='drawing'] [data-part='drawing-handle']) { stroke: currentColor; fill: none; }
+:where([data-part='crosshair'] [data-part='crosshair-price']) { fill: currentColor; font: 11px var(--mt-font-numeric); }
+:where([data-mt][data-part='drawing'] [data-part='drawing-text'], [data-mt][data-part='drawing'] [data-part='drawing-level'] text, [data-mt][data-part='drawing'] [data-part='drawing-range']) { fill: currentColor; }
+:where([data-mt][data-part='drawing'] :is([data-part='drawing-line'], [data-part='drawing-box'], [data-part='drawing-level'] line)) { stroke-width: var(--mt-drawing-width); stroke-dasharray: var(--mt-drawing-dash); }
+:where([data-mt][data-part='drawing'][data-state='active'] :is([data-part='drawing-line'], [data-part='drawing-box'], [data-part='drawing-level'] line)) { stroke-width: var(--mt-drawing-width-active); stroke-dasharray: var(--mt-drawing-dash-active); }
+:where([data-mt][data-part='drawing'][data-state='selected'] :is([data-part='drawing-line'], [data-part='drawing-box'], [data-part='drawing-level'] line)) { stroke-width: var(--mt-drawing-width-selected); stroke-dasharray: var(--mt-drawing-dash-selected); }
+:where([data-mt][data-part='drawing'][data-locked] :is([data-part='drawing-line'], [data-part='drawing-box'], [data-part='drawing-level'] line)) { stroke-width: var(--mt-drawing-width-locked, var(--mt-drawing-width)); stroke-dasharray: var(--mt-drawing-dash-locked, var(--mt-drawing-dash)); }
+:where([data-mt][data-part='drawing'][data-locked][data-state='selected'] :is([data-part='drawing-line'], [data-part='drawing-box'], [data-part='drawing-level'] line)) { stroke-width: var(--mt-drawing-width-locked, var(--mt-drawing-width-selected)); stroke-dasharray: var(--mt-drawing-dash-locked, var(--mt-drawing-dash-selected)); }
+:where([data-mt][data-part='drawing'] [data-part='drawing-handle']) { stroke-width: var(--mt-drawing-handle-width); }
+:where([data-mt][data-part='drawing'] [data-part='drawing-handle'][data-dragging]) { stroke-width: var(--mt-drawing-handle-width-dragging); }
+
+/* Selected series and studies, the same way drawings show it: a heavier stroke, never colour alone. */
+:where([data-part='candles'][data-state='selected'] :is(line, [data-part='body'], [data-part='line'])) { stroke-width: var(--mt-series-width-selected, 2); }
+:where([data-part='candles'][data-state='selected'] [data-part='body']) { stroke: currentColor; }
+:where([data-part='study-line'][data-state='selected']) { stroke-width: var(--mt-study-width-selected, 2.5); }
+:where([data-part='study-band'][data-state='selected']) { stroke: currentColor; stroke-width: 1.5; }
+:where([data-part='study-select'], [data-part='series-select']) { cursor: pointer; }
+
+/* Panels: the series lines, their bands and the selected state. Colour is yours; a selected series is heavier, never colour alone. */
+:where([data-part='panel-series']) { stroke: currentColor; stroke-width: var(--mt-study-width, 1.5); }
+:where([data-part='panel-series'][data-style='histogram']) { stroke: none; fill: currentColor; fill-opacity: var(--mt-histogram-opacity, 0.55); }
+:where([data-part='panel-series'][data-style='histogram'][data-state='selected']) { stroke: currentColor; stroke-width: var(--mt-study-width, 1.5); fill-opacity: 0.85; }
+:where([data-part='panel-point']) { stroke: none; }
+:where([data-part='panel-level']) { stroke: var(--mt-grid, currentColor); stroke-opacity: 0.8; stroke-dasharray: 4 3; }
+:where([data-part='panel-problem']), :where([data-part='panel-gaps']), :where([data-part='study-problem']) { font: 12px var(--mt-font-numeric); }
+:where([data-part='panel-series'][data-state='selected']) { stroke-width: var(--mt-study-width-selected, 2.5); }
+:where([data-part='panel-divider'], [data-part='panel-crosshair']) { stroke: var(--mt-grid, currentColor); stroke-opacity: 0.6; }
+:where([data-part='panel-grid'] line) { stroke: var(--mt-grid, currentColor); stroke-opacity: 0.3; }
+:where([data-part='panel-axis'] text, [data-part='panel-label']) { fill: currentColor; font: 11px var(--mt-font-numeric); }
+:where([data-part='panel-select'], [data-part='panel-move-to']) { cursor: pointer; }
+
+/*
+ * Toolbar, Menu and Submenu. Only what makes them work without a stylesheet: where a menu list sits, and the touch target.
+ * Looks (colour, border, shadow, spacing) are yours. :where() keeps the specificity at zero, so any rule of yours wins.
+ * Nothing opens on hover: a list opens by tap, click or key.
+ */
+:where([data-mt][data-part='menu'], [data-mt][data-part='submenu']) { position: relative; display: inline-block; }
+:where([data-mt][data-part='menu-list'], [data-mt][data-part='submenu-list']) { position: absolute; z-index: 10; min-inline-size: max-content; margin: 0; }
+:where([data-mt][data-part='menu-list']) { inset-block-start: 100%; inset-inline-start: 0; }
+:where([data-mt][data-part='submenu-list']) { inset-block-start: 0; inset-inline-start: 100%; }
+:where([data-mt][data-part='menu-item'], [data-mt][data-part='menu-radio-item'], [data-mt][data-part='submenu-trigger']) { display: block; inline-size: 100%; text-align: start; }
+:where([data-mt][data-part='toolbar-separator'], [data-mt][data-part='menu-separator']) { margin-block: 2px; margin-inline: 4px; }
+:where([data-mt][data-part='toolbar'][aria-orientation='horizontal']) { display: flex; flex-wrap: wrap; align-items: center; }
+:where([data-mt][data-part='toolbar'][aria-orientation='vertical']) { display: flex; flex-direction: column; align-items: stretch; }
+:where([data-mt] [data-part='icon']) { display: inline-flex; align-items: center; justify-content: center; }
+
+/* Phones and tablets: every toolbar button, menu trigger and menu item reaches --mt-touch-target in both directions. */
+@media (pointer: coarse) {
+  :where([data-mt][data-touch-target]) { min-block-size: var(--mt-touch-target); min-inline-size: var(--mt-touch-target); }
+}

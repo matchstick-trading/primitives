@@ -1,0 +1,67 @@
+{
+  "name": "@matchstick-trading/primitives",
+  "version": "0.0.10",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matchstick-trading/primitives.git",
+    "directory": "packages/primitives"
+  },
+  "homepage": "https://ui.matchstick.trading",
+  "bugs": {
+    "url": "https://github.com/matchstick-trading/primitives/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Matchstick Primitives: composable, headless chart and replay parts (developer preview)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
+    "./tokens.css": "./src/tokens.css"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "src",
+    "!src/**/*.test.*",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "AGENTS.md",
+    "llms.txt",
+    "examples"
+  ],
+  "scripts": {
+    "build": "tsc && node scripts/add-use-client.mjs",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit && node scripts/check-core.mjs",
+    "check:core": "node scripts/check-core.mjs",
+    "check:pack": "node scripts/check-pack.mjs",
+    "prepublishOnly": "npm run build && npm run check:pack"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "^19.2.0",
+    "typescript": "~5.8.2",
+    "vitest": "^2.1.4"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  }
+}

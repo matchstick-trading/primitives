@@ -26,7 +26,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Kit version, or "docs site"
+      label: Package version, or "docs site"
       placeholder: "0.0.1"
   - type: input
     id: environment

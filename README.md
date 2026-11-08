@@ -6,16 +6,17 @@ parts sit on top of it.
 
 **Docs and live demos:** https://ui.matchstick.trading
 
-> **Developer preview, v0.0.5.** Parts, names and data shapes can change in the next version without a migration
+> **Developer preview, v0.0.10.** Parts, names and data shapes can change in the next version without a migration
 > path. Nothing here promises later versions, updates or support.
 
 ## What this repository is for
 
-This repository holds the issue tracker, these notes and small teaching examples. It does not hold the kit's source.
+This repository holds the package source (`packages/primitives`), the issue tracker, these notes and small teaching examples.
 
-No licence yet. Lawyers cost money and this is a one-person company, so the terms are coming once we can afford to write them properly. Until then, read the docs and try the playground, and the source stays with us.
+Install the package from npm: `npm install @matchstick-trading/primitives` (React 18 or 19 is a peer dependency).
 
-What you may do today: evaluate the docs and the playground. Using the source is not allowed yet.
+Licence: Apache-2.0, this package only. Matchstick Replay and the engine are not covered. See
+[`packages/primitives/LICENSE`](packages/primitives/LICENSE).
 
 Open an issue to:
 
@@ -25,14 +26,14 @@ Open an issue to:
 ## Examples
 
 `examples/` holds small teaching examples written for this repository, each MIT-licensed under its own `LICENSE`
-file. That licence covers only the example folder it sits in; the primitives kit is still not licensed.
+file. That licence covers only the example folder it sits in; the package under `packages/primitives` is Apache-2.0.
 
 - [Symbol ranking](examples/symbol-ranking): one way to rank symbol-search results, in plain TypeScript.
   [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/symbol-ranking), no account needed.
 
 ## Version and supported scope
 
-v0.0.5. What was run and checked, and what wasn't yet, is listed on
+v0.0.10. What was run and checked, and what wasn't yet, is listed on
 [Supported scope](https://ui.matchstick.trading/docs/supported). In short:
 
 - React 19.2 and 18.3.1 for the React parts; the core needs no framework.
