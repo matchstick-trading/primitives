@@ -40,3 +40,5 @@ export { POINT_KINDS, alignSeries, duplicateIds, pointsFromValues, report, resol
 export type { AlignMode, AlignOptions, AlignedSeries, AlignedState, DataSeries, FindingKind, PointKind, ResolvedSeries, SeriesCalendar, SeriesFinding, SeriesInput, SeriesIssue, SeriesPoint, SeriesSet, SeriesValidation } from './series.js';
 export { csvAdapter, toSeriesSet } from './adapter.js';
 export type { AdapterIssue, AdapterResult, CsvAdapterOptions, DataAdapter } from './adapter.js';
+export { applyTick, atLiveEdge, barStart, followLiveEdge } from './live.js';
+export type { LiveTick, TickOutcome, TickResult } from './live.js';

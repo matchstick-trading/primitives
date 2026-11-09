@@ -10,7 +10,7 @@ Free building blocks for trading screens, fed by Matchstick replay or by your ow
 
 Headless, keyboard-first React parts for trading screens, with a plain-TypeScript core under them. Charts, studies,
 drawings, a volume profile, a replay transport and scrubber, a cursor, a depth profile, a diff table, a symbol search,
-a receipt and a notice. Developer preview, version 0.0.11: names and parts can change.
+a receipt and a notice. Developer preview, version 0.0.12: names and parts can change.
 
 Every demo and example uses made-up (synthetic) data. No market data ships in this package, and the parts place no
 orders: there is no order entry, account or trading feature here.
@@ -556,7 +556,7 @@ cannot tell an emptied list from a switch to a symbol with no drawings, and a mi
 
 `@matchstick-trading/primitives/core` is plain TypeScript with no imports outside itself: chart geometry and scales,
 the studies (`ema`, `sma`, `rsi`, `atr`, `bollinger`, `vwap`), the volume profile, the drawing model, the CSV reader
-(`parseBarsCsv`), the key maps and the chart's pointer and wheel gestures (`reduceChartGesture`, a pure reducer from an event to a viewport or price-range change). Use it from any framework or from Node.
+(`parseBarsCsv`), live bars (`applyTick` folds a tick into the newest bar or opens a new one; `atLiveEdge` and `followLiveEdge` keep a viewport on the newest bar; see `examples/live-bars.mjs`), the key maps and the chart's pointer and wheel gestures (`reduceChartGesture`, a pure reducer from an event to a viewport or price-range change). Use it from any framework or from Node.
 
 ## Your own data
 
