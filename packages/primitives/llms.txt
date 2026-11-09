@@ -1,6 +1,6 @@
 # Matchstick Primitives
 
-> Headless, keyboard-first React parts for trading screens, with a plain-TypeScript core. Developer preview 0.0.10. Every example uses synthetic data.
+> Headless, keyboard-first React parts for trading screens, with a plain-TypeScript core. Developer preview 0.0.11. Every example uses synthetic data.
 
 - [README.md](README.md): the parts, a first chart, the core, your own data.
 - [AGENTS.md](AGENTS.md): what an agent may do with this package, what to ask first, what not to do.

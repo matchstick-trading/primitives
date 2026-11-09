@@ -1,6 +1,6 @@
 # Matchstick Primitives: how an agent should use this package
 
-You are reading the package that was installed, so read it from here instead of the website. Developer preview 0.0.10;
+You are reading the package that was installed, so read it from here instead of the website. Developer preview 0.0.11;
 names and parts can change. All data in the examples is made up.
 
 ## Ask first
@@ -30,7 +30,7 @@ names and parts can change. All data in the examples is made up.
 Say these to the user before they plan around the package. The full list is https://ui.matchstick.trading/docs/supported.
 
 - Series take `points` (`{ t, kind, v? }`, ISO-8601 UTC `t`); the bare `values` array is a shim that is still accepted in this version and will be removed in a later one. See the README, "Give a series a clock".
-- It is a developer preview (0.0.10): names, parts and data shapes can change without a migration path, and there is no promise of updates or support.
+- It is a developer preview (0.0.11): names, parts and data shapes can change without a migration path, and there is no promise of updates or support.
 - It is licensed Apache-2.0, for this package only (see `LICENSE` and the README).
 - `./core` has no rendering. Without React you draw the output yourself.
 - Cursor and Transport state live in the React parts, not in `./core`.
@@ -38,7 +38,7 @@ Say these to the user before they plan around the package. The full list is http
 
 ## Where to look when something does not work
 
-- Styling looks absent: import `@matchstick-trading/primitives/tokens.css` once and style the `data-` attributes.
-- A study line is invisible: the study parts draw SVG with no stroke or fill; the README has the `data-part='study-line'` rule and the nesting (`Study.Root` inside `Chart.Root`, around `Chart.Plot` and `Study.Legend`).
+- Styling looks absent: import `@matchstick-trading/primitives/tokens.css` once. From 0.0.11 it draws the chart parts in the page's text colour; before that, style the `data-` attributes yourself. Your own CSS wins.
+- A study line is invisible: from 0.0.11 `tokens.css` strokes it; on 0.0.10 the study parts draw SVG with no stroke or fill and the README has the `data-part='study-line'` rule and the nesting (`Study.Root` inside `Chart.Root`, around `Chart.Plot` and `Study.Legend`).
 - A chart is blank: it needs a non-empty, ascending list of bars with unique `timestamp` values in milliseconds.
 - Questions and issues: https://github.com/matchstick-trading/primitives/issues

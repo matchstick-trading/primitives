@@ -2,6 +2,10 @@
 
 Developer preview: names, parts and data shapes can change between versions. Versions are `0.0.x` until a `0.1.0`.
 
+## 0.0.11
+
+- Default look for the chart: with `tokens.css` alone, candles, volume, grid, axis labels, crosshair, studies, panel series and the volume profile are drawn readable on a light page and a dark one. Marks follow the page's text colour (`currentColor`) with the up and down colours mixed in; up bodies are light, down bodies solid. The rules use `:where()`, so your own CSS still wins. In 0.0.10 these drew black until you added the README's chart CSS.
+
 ## 0.0.10
 
 First public release (Apache-2.0).

@@ -110,6 +110,10 @@ function Root({ trades, limit = 50, summaryEveryMs = 5000, onSelect, className, 
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
   const [announced, setAnnounced] = useState(summary);
+  // A line that says "No trades yet." must not outlive the first trades by a whole interval: replace it at once.
+  useEffect(() => {
+    if (read.rows.length > 0 && announced === tapeSummary([])) setAnnounced(summary);
+  }, [read.rows.length, announced, summary]);
   useEffect(() => {
     const id = setInterval(() => { if (!pausedRef.current) setAnnounced(latest.current); }, Math.max(1000, summaryEveryMs));
     return () => clearInterval(id);

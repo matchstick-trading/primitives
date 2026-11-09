@@ -10,7 +10,7 @@ Free building blocks for trading screens, fed by Matchstick replay or by your ow
 
 Headless, keyboard-first React parts for trading screens, with a plain-TypeScript core under them. Charts, studies,
 drawings, a volume profile, a replay transport and scrubber, a cursor, a depth profile, a diff table, a symbol search,
-a receipt and a notice. Developer preview, version 0.0.10: names and parts can change.
+a receipt and a notice. Developer preview, version 0.0.11: names and parts can change.
 
 Every demo and example uses made-up (synthetic) data. No market data ships in this package, and the parts place no
 orders: there is no order entry, account or trading feature here.
@@ -59,7 +59,7 @@ In a TypeScript project, importing `tokens.css` needs the bundler's asset types 
 `tsconfig.json` for Vite), or `tsc` reports TS2882. The chart is 420 px tall by default and as wide as its container;
 set `height` (and optionally `width`) on `Chart.Root` to change that, rather than sizing a wrapper around it.
 
-The chart draws SVG and leaves stroke and fill to you, so add this once (it styles `data-part` and `data-change`, not class names):
+`tokens.css` also gives the chart a default look, so it is readable with nothing else: grid, axis labels, wicks and outlines take the page's text colour (so they show on a light page and a dark one), and up and down colours are mixed into it. Up bodies are light and down bodies solid, so direction never rests on colour alone. The rules sit behind `:where()`, so any rule of yours wins. To restyle the chart (these are the rules the default is built from, in simpler form), write rules on `data-part` and `data-change`, not class names:
 
 ```css
 [data-part='grid'] line { stroke: #8884; }
@@ -114,7 +114,7 @@ export function ReplayScrubber() {
 
 ### Add a volume profile
 
-`VolumeProfile.Histogram` goes inside `Chart.Plot` and draws SVG with no fill, so it shows as black blocks until you style it. Put it before the candles so they stay on top:
+`VolumeProfile.Histogram` goes inside `Chart.Plot`; `tokens.css` fills its rows (up and down, the value area stronger). Put it before the candles so they stay on top. To restyle it:
 
 ```css
 [data-part='profile-row'] [data-change='up'] { fill: color-mix(in srgb, var(--mt-up) 35%, transparent); }
@@ -296,7 +296,7 @@ export function DrawingChart() {
 }
 ```
 
-Add the chart CSS from "First chart". `tokens.css` strokes the drawings in `currentColor` with no fill, so they show in the text colour; set
+`tokens.css` styles the chart, and it strokes the drawings in `currentColor` with no fill, so they show in the text colour; set
 `color` on `[data-part='drawing']` to change it. Press a tool, then click twice on the chart (or press Enter twice with the chart focused).
 
 The parts draw no styling of their own. The chart, study, depth and scrubber parts set `data-part` and state attributes

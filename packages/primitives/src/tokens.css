@@ -233,3 +233,44 @@
 @media (pointer: coarse) {
   :where([data-mt][data-touch-target]) { min-block-size: var(--mt-touch-target); min-inline-size: var(--mt-touch-target); }
 }
+
+/*
+ * Default look for the chart parts, so a fresh install draws readable marks with this file alone. It follows the host's
+ * text colour (`currentColor`), not a colour of its own: text, grid lines, wicks and outlines are the page's ink, so
+ * they read on a light page and on a dark one. The up and down colours are mixed into that ink (never alone), and
+ * direction is also in the fill: up bodies are light, down bodies solid. :where() keeps the specificity at zero, so any
+ * rule of yours wins without a fight. Set your own `color` on a parent of the chart to change the ink.
+ */
+:where([data-part='plot']) {
+  --mt-ink-up: color-mix(in srgb, var(--mt-up) 60%, currentColor);
+  --mt-ink-down: color-mix(in srgb, var(--mt-down) 60%, currentColor);
+  --mt-ink-flat: color-mix(in srgb, var(--mt-flat) 60%, currentColor);
+}
+:where([data-part='plot'] :is([data-part='grid'], [data-part='panel-grid'])) { stroke: currentColor; stroke-opacity: 0.15; stroke-width: 1; }
+:where([data-part='plot'] [data-part='panel-divider']) { stroke: currentColor; stroke-opacity: 0.3; }
+:where([data-part='plot'] :is([data-part='price-axis'], [data-part='time-axis'], [data-part='panel-axis'], [data-part='panel-label']) text),
+:where([data-part='plot'] [data-part='panel-label']) { fill: currentColor; font: 11px var(--mt-font-numeric); }
+:where([data-part='plot'] [data-part='crosshair'] line),
+:where([data-part='plot'] [data-part='panel-crosshair']) { stroke: currentColor; stroke-opacity: 0.6; stroke-dasharray: 3 3; }
+:where([data-part='plot'] [data-part='panel-level']) { stroke: currentColor; stroke-opacity: 0.5; stroke-dasharray: 5 4; }
+:where([data-part='plot'] [data-part='candles'] [data-change='up']) { --mt-mark: var(--mt-ink-up); }
+:where([data-part='plot'] [data-part='candles'] [data-change='down']) { --mt-mark: var(--mt-ink-down); }
+:where([data-part='plot'] [data-part='candles'] [data-change='flat']) { --mt-mark: var(--mt-ink-flat); }
+:where([data-part='plot'] [data-part='candles'] line) { stroke: var(--mt-mark, currentColor); stroke-width: 1; }
+:where([data-part='plot'] [data-part='candles'] rect) { fill: var(--mt-mark, currentColor); stroke: var(--mt-mark, currentColor); stroke-width: 1; }
+:where([data-part='plot'] [data-part='candles'] [data-change='up'] rect) { fill: color-mix(in srgb, var(--mt-up) 30%, transparent); }
+:where([data-part='plot'] [data-part='candles'][data-style='ohlc'] line) { stroke-width: 1.5; }
+:where([data-part='plot'] [data-part='candles'] [data-part='line']) { stroke: var(--mt-ink-up); stroke-width: 1.5; }
+:where([data-part='plot'] [data-part='candles'] [data-part='area']) { fill: color-mix(in srgb, var(--mt-up) 18%, transparent); stroke: none; }
+:where([data-part='plot'] [data-part='volume'] [data-change='up']) { fill: color-mix(in srgb, var(--mt-ink-up) 55%, transparent); }
+:where([data-part='plot'] [data-part='volume'] :is([data-change='down'], [data-change='flat'])) { fill: color-mix(in srgb, var(--mt-ink-down) 55%, transparent); }
+:where([data-part='plot'] [data-part='crosshair-price']) { fill: currentColor; }
+:where([data-part='plot'] [data-part='study-line']) { stroke: color-mix(in srgb, var(--mt-synthetic) 70%, currentColor); stroke-width: 1.25; }
+:where([data-part='plot'] [data-part='study-band']) { fill: color-mix(in srgb, var(--mt-synthetic) 14%, transparent); }
+:where([data-part='plot'] [data-part='panel-series']) { stroke: color-mix(in srgb, var(--mt-synthetic) 70%, currentColor); stroke-width: 1.5; }
+:where([data-part='plot'] [data-part='profile-row'] [data-change='up']) { fill: color-mix(in srgb, var(--mt-ink-up) 35%, transparent); }
+:where([data-part='plot'] [data-part='profile-row'] [data-change='down']) { fill: color-mix(in srgb, var(--mt-ink-down) 35%, transparent); }
+:where([data-part='plot'] [data-part='profile-row'][data-value-area] [data-change='up']) { fill: color-mix(in srgb, var(--mt-ink-up) 60%, transparent); }
+:where([data-part='plot'] [data-part='profile-row'][data-value-area] [data-change='down']) { fill: color-mix(in srgb, var(--mt-ink-down) 60%, transparent); }
+:where([data-part='plot'] [data-part='poc']) { stroke: var(--mt-focus); stroke-width: 1.5; }
+:where([data-part='plot'] :is([data-part='vah'], [data-part='val'])) { stroke: currentColor; stroke-opacity: 0.6; stroke-dasharray: 5 4; }
