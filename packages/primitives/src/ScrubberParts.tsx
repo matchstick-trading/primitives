@@ -152,7 +152,7 @@ export interface ScrubberThumbProps {
   className?: string;
   /** Accessible name. */
   label?: string;
-  /** What the position means in words (the host's readout); announced with the value. */
+  /** What the position means in words (the host's readout); announced with the value. Defaults to the percent through the session. */
   valueText?: string;
   /** Ids of elements that describe the thumb, such as the first few gap marks. */
   describedBy?: string;
@@ -175,7 +175,7 @@ function Thumb({ className, label = 'Session position', valueText, describedBy }
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(clampFraction(fraction) * 100)}
-      aria-valuetext={valueText}
+      aria-valuetext={valueText ?? `${Math.round(clampFraction(fraction) * 100)} percent through the session`}
       style={{ left: percent(fraction) }}
       onKeyDown={onThumbKeyDown}
     />

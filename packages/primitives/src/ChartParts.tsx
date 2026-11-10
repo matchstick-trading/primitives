@@ -94,10 +94,22 @@ const finiteBar = (bar: CandleBar | null | undefined): bar is CandleBar =>
   bar != null && Number.isFinite(bar.timestamp) && Math.abs(bar.timestamp) <= 8.64e15
   && Number.isFinite(bar.open) && Number.isFinite(bar.high) && Number.isFinite(bar.low) && Number.isFinite(bar.close);
 
+/**
+ * How much of each array has already been checked and found fully usable. A host that re-renders with the same array
+ * (appending to it, or shrinking it) then pays only for the bars it has not seen, not for the whole series. Bars are
+ * assumed not to be edited in place after they are checked, which the memo on [rawBars, length] below already assumed.
+ */
+const checked = new WeakMap<readonly CandleBar[], number>();
+
 /** The bars that can be drawn: a bar with a missing or non-finite time or price is left out (so indexes after it shift: filter before computing a study), and no list draws nothing. */
 function usableBars(bars: readonly CandleBar[] | null | undefined): readonly CandleBar[] {
   if (!Array.isArray(bars)) return [];
-  return bars.every(finiteBar) ? bars : bars.filter(finiteBar);
+  const from = checked.get(bars) ?? 0;
+  for (let i = from; i < bars.length; i++) {
+    if (!finiteBar(bars[i])) return bars.filter(finiteBar);
+  }
+  checked.set(bars, Math.max(from, bars.length));
+  return bars;
 }
 
 function Root({ bars: rawBars, viewport, onViewportChange, priceRange, onPriceRangeChange, active, onActiveChange, width: fixedWidth, height = 420, volumeShare, include, decimals: rawDecimals = 2, synthetic, className, 'aria-label': label = 'Price chart', children }: ChartRootProps) {
@@ -155,17 +167,22 @@ function Root({ bars: rawBars, viewport, onViewportChange, priceRange, onPriceRa
   const frame = useMemo(() => chartFrame(scaleBars && scaleBars.length === bars.length ? scaleBars : bars, view, { width, height: mainHeight ?? height }, { volumeShare, include: mergedInclude, priceRange: range, ...(mainHeight !== null ? { axisBottom: 0 } : {}) }), [scaleBars, bars, bars.length, view, width, height, mainHeight, volumeShare, mergedInclude, range]);
   const totalHeight = mainHeight !== null ? height : frame.height;
   const plotBottom = mainHeight !== null ? height - AXIS_BOTTOM : frame.plotHeight;
-  const dataSpan = useMemo(() => dataPriceSpan(bars), [bars, bars.length]);
+  // Only a price drag, wheel or arrow key needs the span of every bar, so it is measured on first use, not on every render.
+  const getDataSpan = useMemo(() => {
+    let done = false;
+    let span: PriceSpan | null = null;
+    return () => { if (!done) { span = dataPriceSpan(bars); done = true; } return span; };
+  }, [bars, bars.length]);
   const readoutId = useId();
   const setViewport = useCallback((next: ChartViewport) => {
     if (viewport === undefined) setInnerViewport(next);
     onViewportChange?.(next);
   }, [viewport, onViewportChange]);
   const setPriceRange = useCallback((next: PriceSpan | null) => {
-    const kept = next ? clampPriceRange(next, dataSpan) : null;
+    const kept = next ? clampPriceRange(next, getDataSpan()) : null;
     if (priceRange === undefined) setInnerRange(kept);
     onPriceRangeChange?.(kept);
-  }, [priceRange, onPriceRangeChange, dataSpan]);
+  }, [priceRange, onPriceRangeChange, getDataSpan]);
   const setActive = useCallback((next: number | null) => {
     if (active === undefined) setInnerActive(next);
     onActiveChange?.(next);
@@ -178,8 +195,10 @@ function Root({ bars: rawBars, viewport, onViewportChange, priceRange, onPriceRa
     return { x: point.x, y: point.y };
   }, []);
   const context = useMemo<ChartContext>(() => ({
-    bars, frame, active: activeIndex, setActive, pointerPrice, pointerBelow, viewport: view, setViewport, priceRange: range, setPriceRange, dataSpan, toChart, readoutId, decimals, totalHeight, plotBottom,
-  }), [bars, frame, activeIndex, setActive, pointerPrice, pointerBelow, view, setViewport, range, setPriceRange, dataSpan, toChart, readoutId, decimals, totalHeight, plotBottom]);
+    bars, frame, active: activeIndex, setActive, pointerPrice, pointerBelow, viewport: view, setViewport, priceRange: range, setPriceRange,
+    get dataSpan() { return getDataSpan(); },
+    toChart, readoutId, decimals, totalHeight, plotBottom,
+  }), [bars, frame, activeIndex, setActive, pointerPrice, pointerBelow, view, setViewport, range, setPriceRange, getDataSpan, toChart, readoutId, decimals, totalHeight, plotBottom]);
   const plotRef = useMemo(() => ({ svgRef, setPointerPrice, setPointerBelow, setScaleBars }), []);
   return (
     <Context.Provider value={context}>
@@ -200,13 +219,14 @@ const PlotRef = createContext<{
 
 /** The drawing surface. Put Grid, Candles, Volume, axes, studies and drawings inside it. */
 function Plot({ className, label = 'Candles, use the arrow keys to move between bars', children }: { className?: string; label?: string; children?: ReactNode }) {
-  const { bars, frame, active, setActive, viewport, setViewport, setPriceRange, dataSpan, toChart, readoutId, totalHeight, plotBottom } = useChart('Plot');
+  const chart = useChart('Plot');
+  const { bars, frame, active, setActive, viewport, setViewport, setPriceRange, toChart, readoutId, totalHeight, plotBottom } = chart; // not dataSpan: reading it here would measure every bar on every render
   const plot = useContext(PlotRef);
   // The gesture rules live in core/chart-gesture; this holds the state between events and does the DOM work.
   const gesture = useRef<ChartGestureState>(INITIAL_CHART_GESTURE);
   const heldRange = (): PriceSpan => [frame.priceMin, frame.priceMax];
   const total = bars.length;
-  const view = (): ChartGestureView => ({ frame, viewport, total, dataSpan, hoverBottom: plotBottom });
+  const view = (): ChartGestureView => ({ frame, viewport, total, dataSpan: chart.dataSpan, hoverBottom: plotBottom });
   const clampBar = (index: number) => Math.min(total - 1, Math.max(0, Math.round(index)));
 
   const onKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
@@ -229,12 +249,12 @@ function Plot({ className, label = 'Candles, use the arrow keys to move between 
       case 'pan-right': setViewport(panViewport(viewport, Math.max(1, span / 10), total)); break;
       case 'price-up': case 'price-down': {
         const r = heldRange();
-        setPriceRange(panPriceRange(r, ((action === 'price-up' ? 1 : -1) * (r[1] - r[0])) / 10, dataSpan));
+        setPriceRange(panPriceRange(r, ((action === 'price-up' ? 1 : -1) * (r[1] - r[0])) / 10, chart.dataSpan));
         break;
       }
       case 'price-zoom-in': case 'price-zoom-out': {
         const r = heldRange();
-        setPriceRange(zoomPriceRange(r, action === 'price-zoom-in' ? 0.8 : 1.25, (r[0] + r[1]) / 2, dataSpan));
+        setPriceRange(zoomPriceRange(r, action === 'price-zoom-in' ? 0.8 : 1.25, (r[0] + r[1]) / 2, chart.dataSpan));
         break;
       }
       case 'zoom-in': setViewport(zoomViewport(viewport, 0.8, active ?? viewport.end - 1, total)); break;
