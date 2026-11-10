@@ -561,7 +561,7 @@ the studies (`ema`, `sma`, `rsi`, `atr`, `bollinger`, `vwap`), the volume profil
 ## Your own data
 
 Give `Chart.Root` a list of bars (a bar with a missing or non-finite time or price is left out rather than drawn, so filter such bars yourself before computing a study, or its values will not line up), or read a CSV with `parseBarsCsv` (or the `CsvDrop` part) and pass the result. Data
-from a third party stays theirs and is not advice. Do not put real market data into anything you share.
+from a third party stays theirs and is not advice. Use your own data and feeds freely in your own app. Before you paste market data into anything you publish or share (docs, issues, screenshots, examples), check the data provider's terms; the examples in this package use made-up data.
 
 ## Tokens
 

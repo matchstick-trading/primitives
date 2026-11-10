@@ -19,7 +19,7 @@ names and parts can change. All data in the examples is made up.
 
 ## Rules
 
-- Use made-up data only. Do not connect a part to a real market data feed or to the user's account.
+- The user may chart their own data and connect their own feeds in their own app: help them do it. Use made-up data in examples, tests and demos you add to this package. Do not paste licensed or private market data into anything the user will publish or share (docs, issues, screenshots, shipped examples): the data provider's terms apply to that.
 - There is no order entry, account or trading feature here, and the parts do not place trades. Do not add them or
   suggest that they do.
 - Make no claim about brokers, platforms or other products, about performance or trading results, or about price.
