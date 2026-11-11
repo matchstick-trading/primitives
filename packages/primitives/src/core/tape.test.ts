@@ -49,3 +49,22 @@ describe('tapeSummary', () => {
     expect(tapeSummary(rows)).toBe('2 trades: 1 buy, 1 sell. Last: sell 1.500 at 1000.15, 14:30:01 UTC.');
   });
 });
+
+describe('a trade without an id next to trades that have one', () => {
+  it('keeps both rows when a given id equals the other row\'s place in the list', () => {
+    const { rows, issues } = readTape([
+      trade('2026-01-05T14:30:00Z'),
+      trade('2026-01-05T14:30:01Z'),
+      trade('2026-01-05T14:30:02Z', { id: '1' }),
+    ]);
+    expect(issues).toEqual([]);
+    expect(rows).toHaveLength(3);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(3);
+    expect(rows[2].id).toBe('1');
+  });
+  it('still reports two rows that give the same id', () => {
+    const { rows, issues } = readTape([trade('2026-01-05T14:30:00Z', { id: 'a' }), trade('2026-01-05T14:30:01Z', { id: 'a' })]);
+    expect(rows).toHaveLength(1);
+    expect(issues).toHaveLength(1);
+  });
+});

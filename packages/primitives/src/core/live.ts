@@ -31,7 +31,7 @@ export interface TickResult {
 
 const positive = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0;
 
-/** The start of the bar a time falls in: whole intervals since the Unix epoch. */
+/** The start of the bar a time falls in on the Unix epoch grid: whole intervals since the epoch. `applyTick` follows the newest bar's own grid instead, so bars stamped at a local midnight still work. */
 export const barStart = (timestamp: number, interval: number): number => Math.floor(timestamp / interval) * interval;
 
 /**
@@ -46,8 +46,9 @@ export function applyTick(bars: readonly CandleBar[], tick: LiveTick, interval: 
   if (typeof tick.timestamp !== 'number' || !Number.isFinite(tick.timestamp)) return { bars: same, outcome: 'invalid', note: 'timestamp must be a number' };
   if (!positive(tick.price)) return { bars: same, outcome: 'invalid', note: 'price must be a number above zero' };
   if (!positive(tick.size)) return { bars: same, outcome: 'invalid', note: 'size must be a number above zero' };
-  const start = barStart(tick.timestamp, interval);
   const last = bars[bars.length - 1];
+  // Bars continue the grid they already sit on (daily bars stamped at local midnight, a CSV with a UTC offset); only the first bar uses the epoch grid.
+  const start = last === undefined ? barStart(tick.timestamp, interval) : last.timestamp + Math.floor((tick.timestamp - last.timestamp) / interval) * interval;
   if (last === undefined || start > last.timestamp) {
     const opened: CandleBar = { timestamp: start, open: tick.price, high: tick.price, low: tick.price, close: tick.price, volume: tick.size };
     return { bars: [...bars, opened], outcome: 'opened' };
@@ -63,8 +64,8 @@ export function applyTick(bars: readonly CandleBar[], tick: LiveTick, interval: 
   return { bars: [...bars.slice(0, -1), updated], outcome: 'updated' };
 }
 
-/** True when the viewport's right edge is on the newest bar (or past it), so the chart is following the live edge. */
-export const atLiveEdge = (view: ChartViewport, barCount: number): boolean => view.end >= barCount;
+/** True when the newest bar is in view (at least partly) at the right edge, or the view reaches past it, so the chart is following the live edge. A view zoomed on the newest bar still follows. */
+export const atLiveEdge = (view: ChartViewport, barCount: number): boolean => view.end > barCount - 1;
 
 /**
  * Keep following: if the viewport was on the live edge before bars were added, move it right by the bars added, so the
@@ -73,5 +74,8 @@ export const atLiveEdge = (view: ChartViewport, barCount: number): boolean => vi
 export function followLiveEdge(view: ChartViewport, countBefore: number, countAfter: number): ChartViewport {
   const added = countAfter - countBefore;
   if (added <= 0 || !atLiveEdge(view, countBefore)) return view;
-  return { start: view.start + added, end: view.end + added };
+  // A view with room past the newest bar (an empty or short chart) uses that room first; the rest shifts, so the newest bar is never pushed out of view.
+  const room = Math.max(0, view.end - countBefore);
+  const shift = Math.max(0, added - room);
+  return shift === 0 ? view : { start: view.start + shift, end: view.end + shift };
 }

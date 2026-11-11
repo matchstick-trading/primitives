@@ -2,6 +2,19 @@
 
 Developer preview: names, parts and data shapes can change between versions. Versions are `0.0.x` until a `0.1.0`.
 
+## Unreleased
+
+- `Chart.Root` takes `validatedBars`: promise your bars are clean and the chart skips the per-bar check, which matters for a very long series replaced on every update. Default off. A very long series also no longer sorts every gap to find its usual gap (a fixed pseudo-random sample of 20 000 gaps is used above 20 000 bars).
+
+- Fixes for live and interactive charts, found by three independent bug-hunting runs:
+  - `followLiveEdge` on an empty or short chart keeps every bar in view instead of sliding the view past the first bar.
+  - `atLiveEdge` is true when the newest bar is at the right edge even after a zoom (the right edge need not be exactly the bar count); `growViewport` follows such a view too.
+  - `growViewport` keeps a zoomed-out view's span on each new bar instead of snapping back to the last 120.
+  - A price range set by hand is dropped when the bars change to a series it no longer touches (a symbol switch), so the chart is not blank.
+  - `applyTick` continues the newest bar's own grid, so daily bars stamped at a local midnight (or a CSV with a UTC offset) take ticks instead of dropping them as late.
+  - `Scrubber`: a second pointer during a drag no longer begins a second gesture, and the thumb's keys do nothing during a drag, so a release commits once.
+  - `barInterval` is recomputed when a host refills the same array; a trade without an `id` no longer collides with another row's given id.
+
 ## 0.0.12
 
 - First slice of Live, in `@matchstick-trading/primitives/core`, additive. `applyTick(bars, tick, interval)` folds one tick into the newest bar or opens a new bar when the interval rolls over; a tick for a bar that has closed, or with a bad number, is reported with a note and changes nothing. `atLiveEdge` and `followLiveEdge` keep a viewport on the newest bar only if it was on it. New example `examples/live-bars.mjs` (synthetic ticks). Ticks use `CandleBar`'s units (numbers, Unix milliseconds); no `Chart` change, no throttled announcements and no feed yet.

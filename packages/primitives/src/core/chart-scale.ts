@@ -103,8 +103,10 @@ export function lastBars(total: number, count: number): ChartViewport {
  * follows, and a view the user moved away from the end stays put. A view past the data is pulled back.
  */
 export function growViewport(view: ChartViewport, seenTotal: number, total: number, span = 120): ChartViewport {
-  if (view.start <= 0 && view.end >= seenTotal) return lastBars(total, span);
-  if (view.end >= seenTotal || view.end > total) return lastBars(total, view.end - view.start);
+  // Only a view narrower than the default window reopens on it; a reader who zoomed out to see more keeps that span.
+  const following = view.end > seenTotal - 1;
+  if (view.start <= 0 && view.end >= seenTotal && view.end - view.start < span) return lastBars(total, span);
+  if (following || view.end > total) return lastBars(total, view.end - view.start);
   return view;
 }
 
@@ -186,21 +188,41 @@ function safeInclude(include: (visible: { first: number; last: number }) => read
   }
 }
 
-const intervals = new WeakMap<readonly CandleBar[], { length: number; interval: number }>();
+const intervals = new WeakMap<readonly CandleBar[], { length: number; first: number; last: number; interval: number }>();
+
+const SAMPLE_OVER = 20_000;
 
 /** The usual gap between bars in milliseconds (the median), or 60 000 when there are fewer than two bars. */
 export function barInterval(bars: readonly CandleBar[]): number {
   if (bars.length < 2) return 60_000;
   const known = intervals.get(bars);
-  if (known?.length === bars.length) return known.interval; // a host that pushes onto the same array gets a fresh one
+  // Same length is not enough: a host may refill the same array (a timeframe switch), so the first and last times must match too. A host that pushes onto the same array gets a fresh one.
+  const first = bars[0].timestamp, last = bars[bars.length - 1].timestamp;
+  if (known && known.length === bars.length && known.first === first && known.last === last) return known.interval;
   // Every gap, not a sample: gaps that repeat (a weekend every fifth bar) would fool a sample taken at a fixed stride.
   // Sorted once per series and remembered, so the drawings and the readout can ask as often as they like.
-  const gaps = new Float64Array(bars.length - 1);
-  for (let i = 1; i < bars.length; i++) gaps[i - 1] = bars[i].timestamp - bars[i - 1].timestamp;
+  // A series over SAMPLE_OVER bars is sampled instead (20 000 gaps picked by a fixed pseudo-random sequence, the same
+  // every time): sorting a million gaps on every fresh array cost more than the rest of the render. Random places cannot
+  // line up with a gap that repeats at any period (a weekend every fifth bar, a session break every 390, every 53rd).
+  const total = bars.length - 1;
+  const count = total > SAMPLE_OVER ? SAMPLE_OVER : total;
+  const gaps = new Float64Array(count);
+  if (count === total) for (let k = 1; k <= total; k++) gaps[k - 1] = bars[k].timestamp - bars[k - 1].timestamp;
+  else {
+    let seed = (total ^ 0x9e3779b9) >>> 0;
+    for (let i = 0; i < count; i++) {
+      seed = (seed + 0x6d2b79f5) >>> 0; // mulberry32
+      let t = seed;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      const k = 1 + Math.floor((((t ^ (t >>> 14)) >>> 0) / 4294967296) * total);
+      gaps[i] = bars[k].timestamp - bars[k - 1].timestamp;
+    }
+  }
   gaps.sort();
   const median = gaps[gaps.length >> 1];
   const interval = median > 0 && Number.isFinite(median) ? median : 60_000;
-  intervals.set(bars, { length: bars.length, interval });
+  intervals.set(bars, { length: bars.length, first, last, interval });
   return interval;
 }
 
@@ -314,6 +336,11 @@ function clampViewport(viewport: ChartViewport, total: number): ChartViewport {
   if (start > total - keep) start = total - keep;
   if (start + span < keep) start = keep - span;
   return { start, end: start + span };
+}
+
+/** True when a price range set by hand lies wholly above or below the bars' own span, so it can no longer show them (the host switched to a series at another price). A range that still touches the bars is kept. */
+export function priceRangeMissesData(range: PriceSpan, data: PriceSpan | null): boolean {
+  return data !== null && (range[1] < data[0] || range[0] > data[1]);
 }
 
 /** The lowest low and highest high of the whole series (padded like the autoscale when they are equal), or null when it has no finite prices. */

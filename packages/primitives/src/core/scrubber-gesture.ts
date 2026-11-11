@@ -40,6 +40,8 @@ const IDLE: Omit<ScrubGestureResult, 'dragFraction'> = { commit: null, begin: fa
 export function reduceScrubGesture(event: ScrubGestureEvent, dragFraction: number | null): ScrubGestureResult {
   switch (event.type) {
     case 'down':
+      // A second press while a drag runs (another pointer) only moves the preview; it does not begin a second gesture.
+      if (dragFraction !== null) return { dragFraction: clampFraction(event.fraction), ...IDLE };
       return { dragFraction: clampFraction(event.fraction), commit: null, begin: true, end: false };
     case 'move':
       return dragFraction === null ? { dragFraction, ...IDLE } : { dragFraction: clampFraction(event.fraction), ...IDLE };
@@ -68,6 +70,11 @@ export function isPrimaryScrubPointer(event: ScrubPointer): boolean {
 /** Whether a move, up or cancel belongs to the pointer that began the drag now in progress (a second contact cannot hijack it). */
 export function isActiveScrubPointer(pointerId: number, activePointerId: number | null): boolean {
   return activePointerId !== null && pointerId === activePointerId;
+}
+
+/** Whether the thumb's keys act now: not while another navigation runs, and not while a drag is in progress (its release commits once). */
+export function scrubKeysAllowed(state: { dragFraction: number | null; loading: boolean }): boolean {
+  return !state.loading && state.dragFraction === null;
 }
 
 /** Where a pointer sits along a track, as a fraction. A track with no width reads as 0. */

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { buttonFace, type NameProps } from './accessible-name.js';
 import { primitiveAttributes, type Change } from './attributes.js';
-import { chartFrame, clampPriceRange, dataPriceSpan, growViewport, lastBars, type ChartInclude, panPriceRange, panViewport, priceTicks, resolveChartKey, tickDecimals, zoomPriceRange, zoomViewport, type CandleBar, type ChartFrame, type ChartViewport, type PriceSpan } from './core/chart-scale.js';
+import { chartFrame, clampPriceRange, dataPriceSpan, growViewport, lastBars, type ChartInclude, panPriceRange, panViewport, priceRangeMissesData, priceTicks, resolveChartKey, tickDecimals, zoomPriceRange, zoomViewport, type CandleBar, type ChartFrame, type ChartViewport, type PriceSpan } from './core/chart-scale.js';
 import { INITIAL_CHART_GESTURE, isChartGestureActive, reduceChartGesture, type ChartGestureResult, type ChartGestureState, type ChartGestureView } from './core/chart-gesture.js';
 import { heikinAshi, formatBarTime } from './core/candles.js';
 import { AXIS_BOTTOM, MAIN_PANEL, panelBands } from './core/panels.js';
@@ -83,6 +83,12 @@ export interface ChartRootProps {
   include?: ChartInclude;
   /** Decimals for printed prices. Default 2. */
   decimals?: number;
+  /**
+   * You promise every bar has a finite time (a valid JavaScript date, within 8.64e15 ms of 1970) and finite open, high, low and close, so the chart skips its check of each
+   * bar. Worth it for a series of hundreds of thousands of bars that you replace on every update; a bad bar then draws
+   * as a broken shape instead of being left out. Default false.
+   */
+  validatedBars?: boolean;
   /** Marks every part as synthetic data. */
   synthetic?: boolean;
   className?: string;
@@ -102,8 +108,9 @@ const finiteBar = (bar: CandleBar | null | undefined): bar is CandleBar =>
 const checked = new WeakMap<readonly CandleBar[], number>();
 
 /** The bars that can be drawn: a bar with a missing or non-finite time or price is left out (so indexes after it shift: filter before computing a study), and no list draws nothing. */
-function usableBars(bars: readonly CandleBar[] | null | undefined): readonly CandleBar[] {
+function usableBars(bars: readonly CandleBar[] | null | undefined, validated = false): readonly CandleBar[] {
   if (!Array.isArray(bars)) return [];
+  if (validated) return bars;
   const from = checked.get(bars) ?? 0;
   for (let i = from; i < bars.length; i++) {
     if (!finiteBar(bars[i])) return bars.filter(finiteBar);
@@ -112,8 +119,8 @@ function usableBars(bars: readonly CandleBar[] | null | undefined): readonly Can
   return bars;
 }
 
-function Root({ bars: rawBars, viewport, onViewportChange, priceRange, onPriceRangeChange, active, onActiveChange, width: fixedWidth, height = 420, volumeShare, include, decimals: rawDecimals = 2, synthetic, className, 'aria-label': label = 'Price chart', children }: ChartRootProps) {
-  const bars = useMemo(() => usableBars(rawBars), [rawBars, rawBars?.length]); // length too: a host may append to the same array
+function Root({ bars: rawBars, viewport, onViewportChange, priceRange, onPriceRangeChange, active, onActiveChange, width: fixedWidth, height = 420, volumeShare, include, decimals: rawDecimals = 2, validatedBars = false, synthetic, className, 'aria-label': label = 'Price chart', children }: ChartRootProps) {
+  const bars = useMemo(() => usableBars(rawBars, validatedBars), [rawBars, rawBars?.length, validatedBars]); // length too: a host may append to the same array
   const [innerViewport, setInnerViewport] = useState<ChartViewport>(() => lastBars(bars.length, 120));
   const [seenTotal, setSeenTotal] = useState(bars.length);
   const [innerActive, setInnerActive] = useState<number | null>(null);
@@ -150,7 +157,17 @@ function Root({ bars: rawBars, viewport, onViewportChange, priceRange, onPriceRa
   const width = fixedWidth ?? measured ?? 800;
   const view = viewport ?? innerViewport;
   const activeIndex = active !== undefined ? active : innerActive;
-  const range = priceRange !== undefined ? priceRange : innerRange;
+  // Only a hand-set range needs the span of every bar, so it is measured on first use, not on every render.
+  const getDataSpan = useMemo(() => {
+    let done = false;
+    let span: PriceSpan | null = null;
+    return () => { if (!done) { span = dataPriceSpan(bars); done = true; } return span; };
+  }, [bars, bars.length]);
+  // A range set by hand that no longer touches the bars (the host switched to another symbol) is dropped, so the chart follows the bars again.
+  const dataSpanNow = priceRange === undefined && innerRange !== null ? getDataSpan() : null;
+  const innerRangeStale = innerRange !== null && priceRangeMissesData(innerRange, dataSpanNow);
+  if (innerRangeStale) setInnerRange(null);
+  const range = priceRange !== undefined ? priceRange : innerRangeStale ? null : innerRange;
   // With a Panels.Root above, the first band is only part of the height and the series placed in it keep themselves in view.
   const panels = useContext(PanelsContext);
   const layoutPanels = panels?.layout.panels;
@@ -167,12 +184,6 @@ function Root({ bars: rawBars, viewport, onViewportChange, priceRange, onPriceRa
   const frame = useMemo(() => chartFrame(scaleBars && scaleBars.length === bars.length ? scaleBars : bars, view, { width, height: mainHeight ?? height }, { volumeShare, include: mergedInclude, priceRange: range, ...(mainHeight !== null ? { axisBottom: 0 } : {}) }), [scaleBars, bars, bars.length, view, width, height, mainHeight, volumeShare, mergedInclude, range]);
   const totalHeight = mainHeight !== null ? height : frame.height;
   const plotBottom = mainHeight !== null ? height - AXIS_BOTTOM : frame.plotHeight;
-  // Only a price drag, wheel or arrow key needs the span of every bar, so it is measured on first use, not on every render.
-  const getDataSpan = useMemo(() => {
-    let done = false;
-    let span: PriceSpan | null = null;
-    return () => { if (!done) { span = dataPriceSpan(bars); done = true; } return span; };
-  }, [bars, bars.length]);
   const readoutId = useId();
   const setViewport = useCallback((next: ChartViewport) => {
     if (viewport === undefined) setInnerViewport(next);

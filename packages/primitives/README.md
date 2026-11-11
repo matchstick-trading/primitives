@@ -59,6 +59,8 @@ In a TypeScript project, importing `tokens.css` needs the bundler's asset types 
 `tsconfig.json` for Vite), or `tsc` reports TS2882. The chart is 420 px tall by default and as wide as its container;
 set `height` (and optionally `width`) on `Chart.Root` to change that, rather than sizing a wrapper around it.
 
+For a series of hundreds of thousands of bars that you replace on every update, pass `validatedBars` to `Chart.Root`: you promise every bar has a finite time (a valid JavaScript date, within 8.64e15 ms of 1970) and a finite open, high, low and close, and the chart skips its check of each one. Without it, a bar with a missing or non-finite value is left out; with it, such a bar draws as a broken shape.
+
 `tokens.css` also gives the chart a default look, so it is readable with nothing else: grid, axis labels, wicks and outlines take the page's text colour (so they show on a light page and a dark one), and up and down colours are mixed into it. Up bodies are light and down bodies solid, so direction never rests on colour alone. The rules sit behind `:where()`, so any rule of yours wins. To restyle the chart (these are the rules the default is built from, in simpler form), write rules on `data-part` and `data-change`, not class names:
 
 ```css

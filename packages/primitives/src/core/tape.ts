@@ -8,7 +8,7 @@ export type TapeSide = 'buy' | 'sell' | 'unknown';
 
 /** One trade as the host records it. `side` is the aggressor when the feed says so; `unknown` when it does not. */
 export interface TapeTrade {
-  /** A stable id from the feed, such as a sequence number. Leave it out and the row's place in the list is used, which changes if the host drops old rows. */
+  /** A stable id from the feed, such as a sequence number. Leave it out and the row's place in the list is used (`#` is added if another row's id already uses that text), which changes if the host drops old rows. */
   id?: string;
   /** ISO-8601 UTC, for example `2026-01-05T14:30:05.123Z`. Rows come oldest first and never go back in time. */
   t: string;
@@ -21,7 +21,7 @@ export interface TapeTrade {
 
 /** A trade that passed the rules, with the id it keeps while the host adds rows after it. */
 export interface TapeRow extends TapeTrade {
-  /** The trade's `id`, or its place in the input as text. */
+  /** The trade's `id`, or its place in the input as text (with `#` added if a given id already uses that text). */
   id: string;
   /** `14:30:05.123`: the UTC clock time, as recorded. */
   time: string;
@@ -80,6 +80,11 @@ export function readTape(input: unknown): TapeRead {
   if (!Array.isArray(input)) return { rows, issues: [{ index: -1, message: 'expected a list of trades' }] };
   let last: string | null = null;
   const seen = new Set<string>();
+  // Known limit: a feed that mixes id-less trades with ids equal to their list places gets a '#' on the id-less row's id
+  // when the id arrives later, so a held row's id can change then. Feed ids always win; a feed should give ids to all or none.
+  // Ids the feed gave: a row without one takes its place in the list as text, unless a given id already uses that text.
+  const given = new Set<string>();
+  for (const item of input) { const g = (item as { id?: unknown } | null)?.id; if (typeof g === 'string' && g !== '') given.add(g); }
   input.forEach((item: unknown, index) => {
     if (typeof item !== 'object' || item === null || Array.isArray(item)) { issues.push({ index, message: 'expected a trade object' }); return; }
     const { id, t, price, size, side } = item as Record<string, unknown>;
@@ -91,7 +96,8 @@ export function readTape(input: unknown): TapeRead {
     if (id !== undefined && (typeof id !== 'string' || id === '')) problems.push('id must be a non-empty string when given');
     if (problems.length) { issues.push({ index, message: problems.join('; ') }); return; }
     if (last !== null && compareInstants(t as string, last) < 0) { issues.push({ index, message: 'earlier than the row before it' }); return; }
-    const rowId = typeof id === 'string' ? id : String(index);
+    let rowId = typeof id === 'string' ? id : String(index);
+    if (typeof id !== 'string') while (given.has(rowId) || seen.has(rowId)) rowId += '#';
     if (seen.has(rowId)) { issues.push({ index, message: `id "${rowId}" is already used` }); return; }
     seen.add(rowId);
     last = t as string;

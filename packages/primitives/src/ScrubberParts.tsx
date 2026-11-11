@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
-import { clampFraction, fractionFromPointer, isActiveScrubPointer, isPrimaryScrubPointer, reduceScrubGesture, resolveScrubKey, type ScrubGestureEvent } from './core/scrubber-gesture.js';
+import { clampFraction, fractionFromPointer, isActiveScrubPointer, isPrimaryScrubPointer, reduceScrubGesture, resolveScrubKey, scrubKeysAllowed, type ScrubGestureEvent } from './core/scrubber-gesture.js';
 
 /**
  * Scrubber as parts: Root, Track, Thumb, Mark. Headless: the parts render the elements the evidence
@@ -76,6 +76,8 @@ function Root({ fraction: committedInput, loading = false, onBeginScrub, onEndSc
   const trackHandlers = useMemo<ScrubberContext['trackHandlers']>(() => ({
     onPointerDown(event) {
       if (live.current.loading) return;
+      // A drag is already running under another pointer (a mouse and a finger are both primary): keep the first.
+      if (activePointerId.current !== null) return;
       // Gate before capturing: a right-click must reach the browser's own menu, and a second finger must not start a scrub.
       if (!isPrimaryScrubPointer(event)) return;
       // Without this, a press after a text selection starts a native drag and the browser cancels the pointer.
@@ -107,10 +109,11 @@ function Root({ fraction: committedInput, loading = false, onBeginScrub, onEndSc
 
   const onThumbKeyDown = useCallback((event: KeyboardEvent<HTMLElement>) => {
     const now = live.current;
-    if (now.loading) return;
     const action = resolveScrubKey(event.key, now.committedFraction);
     if (!action) return;
     event.preventDefault();
+    // During a drag (or while loading) the keys do nothing here, and a host's window listener must not act on them either.
+    if (!scrubKeysAllowed(now)) { event.stopPropagation(); return; }
     if (action.type === 'step') {
       // A host may also listen for arrows on the window; letting this bubble would step twice.
       event.stopPropagation();
