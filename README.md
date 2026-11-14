@@ -32,6 +32,8 @@ file. That licence covers only the example folder it sits in; the package under 
   [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/symbol-ranking), no account needed.
 - [Replay on a chart](examples/replay-on-a-chart): replay a made-up session bar by bar, with a bot's trades drawn on the chart as it passes them.
   [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/replay-on-a-chart), no account needed.
+- [Review an agent’s trades](examples/agent-review): replay a made-up session while a made-up agent suggests trades; accept or reject each one as it appears.
+  [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/agent-review), no account needed.
 
 ## Version and supported scope
 
