@@ -63,11 +63,11 @@ export default function App() {
               <Ladder.Table caption="Ladder">
                 <tbody>
                   {built.asks.map((row) => (
-                    <Ladder.Row key={row.id} row={row}><td><Ladder.Price row={row} /></td><td><Ladder.Size row={row} /></td></Ladder.Row>
+                    <Ladder.Row key={row.id} row={row}><Ladder.Price row={row} /><Ladder.Size row={row} /></Ladder.Row>
                   ))}
                   <Ladder.Last last={built.last} colSpan={2} />
                   {built.bids.map((row) => (
-                    <Ladder.Row key={row.id} row={row}><td><Ladder.Price row={row} /></td><td><Ladder.Size row={row} /></td></Ladder.Row>
+                    <Ladder.Row key={row.id} row={row}><Ladder.Price row={row} /><Ladder.Size row={row} /></Ladder.Row>
                   ))}
                 </tbody>
               </Ladder.Table>
@@ -80,7 +80,7 @@ export default function App() {
                   <tbody>
                     {rows.map((row) => (
                       <Tape.Row key={row.id} row={row}>
-                        <td><Tape.Time row={row} /></td><td><Tape.Price row={row} /></td><td><Tape.Size row={row} /></td><td><Tape.Side row={row} /></td>
+                        <Tape.Time row={row} /><Tape.Price row={row} /><Tape.Size row={row} /><Tape.Side row={row} />
                       </Tape.Row>
                     ))}
                   </tbody>
