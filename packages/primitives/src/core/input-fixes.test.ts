@@ -129,3 +129,13 @@ describe('parseBarsCsv: grouped prices settle the point convention', () => {
     expect(bars[0]).toMatchObject({ open: 4725.5, high: 4730.25, low: 4720, close: 4728.75 });
   });
 });
+
+// Codex review round 8: the same grouped prices in a file with no header row.
+describe('parseBarsCsv: a headerless file with grouped prices', () => {
+  it('reads the first row as data, not as a header', () => {
+    const { bars, errors } = parseBarsCsv('2026-01-05T14:30:00Z;4,725.50;4,730.25;4,720.00;4,728.75;100\n2026-01-05T14:31:00Z;4,728.75;4,731.00;4,727.00;4,730.00;90');
+    expect(errors).toEqual([]);
+    expect(bars).toHaveLength(2);
+    expect(bars[0]).toMatchObject({ open: 4725.5, close: 4728.75 });
+  });
+});

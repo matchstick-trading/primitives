@@ -226,7 +226,7 @@ export function parseBarsCsv(text: string, options: CsvBarsOptions | null = {}):
   const first = splitLine(lines[firstLine]!.text, delimiter);
   // No header when the first row is already a bar: a time (ISO or Unix) and four prices.
   const offset = Number.isFinite(options.utcOffsetMinutes) ? (options.utcOffsetMinutes as number) : 0;
-  const headerless = first.length >= 5 && readTime(first[0]) !== null && first.slice(1, 5).every((c) => readNumber(c, decimalComma) !== null);
+  const headerless = first.length >= 5 && readTime(first[0]) !== null && first.slice(1, 5).every((c) => readNumber(c, decimalComma) !== null || readNumber(c, false) !== null); // a grouped point price (4,725.50) is a price under either reading
   let map: Partial<Record<Field, number>>;
   if (headerless) {
     map = { time: 0, open: 1, high: 2, low: 3, close: 4, volume: first.length > 5 ? 5 : undefined };
