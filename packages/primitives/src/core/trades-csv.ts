@@ -46,7 +46,7 @@ const ISO_Z = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const SIDES: Record<string, TapeSide> = { buy: 'buy', b: 'buy', bought: 'buy', long: 'buy', sell: 'sell', s: 'sell', sold: 'sell', short: 'sell', unknown: 'unknown', u: 'unknown', '': 'unknown' };
 
 const GROUPED = /^\d{1,3}(,\d{3})+(\.\d+)?$/;
-const POINT_DECIMAL = /^(\d+|\d{1,3}(,\d{3})+)\.\d+$/;
+const POINT_DECIMAL = /^(?:(?:\d+|\d{1,3}(?:,\d{3})+)\.\d*|\.\d+)$/; // 4725.5, 1,200.5, .25 and 10. all show the file writes points
 const COMMA_DECIMAL = /^\d*,\d+$/;
 
 /** Orders two ISO-8601 UTC instants at the precision written (a fraction past milliseconds still counts). */

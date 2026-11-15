@@ -85,3 +85,12 @@ describe('readTradesCsv: one bad row does not take valid trades with it', () => 
     expect(issues.map((i) => i.line)).toEqual([4]);
   });
 });
+
+// Codex review round 2: a price written .25 or 10. is a point decimal, so 1,200 beside it is a thousand, not 1.200.
+describe('readTradesCsv: a leading or trailing point still settles the file convention', () => {
+  it('reads size 1,200 as 1200 in a semicolon file whose price is .25', () => {
+    const { rows, issues } = readTradesCsv('time;price;size;side\n2026-01-05T14:30:05Z;.25;1,200;buy');
+    expect(issues).toEqual([]);
+    expect(rows[0]).toMatchObject({ price: '0.25', size: '1200' });
+  });
+});
