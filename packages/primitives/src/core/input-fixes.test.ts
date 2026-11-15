@@ -109,3 +109,14 @@ describe('mixed decimal conventions in one semicolon file', () => {
     expect(consistent.bars[0]?.close).toBeCloseTo(1.085);
   });
 });
+
+// Codex review round 5 on the 0.0.13 sync: a row that is refused for its time must not decide how every other row's prices are read.
+describe('parseBarsCsv: the decimal convention comes from rows that can be read', () => {
+  it('keeps 1,080 as 1.080 in a semicolon file when the only point-decimal row has a bad time', () => {
+    const csv = 'time;open;high;low;close\n1704205800;1,080;1,090;1,070;1,085\nnot-a-time;1.080;1.090;1.070;1.085';
+    const { bars, errors } = parseBarsCsv(csv);
+    expect(errors.map((e) => e.line)).toEqual([3]);
+    expect(bars).toHaveLength(1);
+    expect(bars[0]).toMatchObject({ open: 1.08, high: 1.09, low: 1.07, close: 1.085 });
+  });
+});
