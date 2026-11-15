@@ -120,3 +120,12 @@ describe('parseBarsCsv: the decimal convention comes from rows that can be read'
     expect(bars[0]).toMatchObject({ open: 1.08, high: 1.09, low: 1.07, close: 1.085 });
   });
 });
+
+// Codex review round 7: a semicolon file whose prices all carry a thousands comma still writes decimal points.
+describe('parseBarsCsv: grouped prices settle the point convention', () => {
+  it('reads 4,725.50 in a semicolon file', () => {
+    const { bars, errors } = parseBarsCsv('time;open;high;low;close;volume\n2026-01-05T14:30:00Z;4,725.50;4,730.25;4,720.00;4,728.75;100');
+    expect(errors).toEqual([]);
+    expect(bars[0]).toMatchObject({ open: 4725.5, high: 4730.25, low: 4720, close: 4728.75 });
+  });
+});

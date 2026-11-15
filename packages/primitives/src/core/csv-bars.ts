@@ -250,7 +250,7 @@ export function parseBarsCsv(text: string, options: CsvBarsOptions | null = {}):
       // A row that will be refused for its time says nothing about the file's convention.
       const stamp = map.date !== undefined ? (cells[map.clock!] ? readTime(cells[map.date], cells[map.clock!], offset) : null) : readTime(cells[map.time!], undefined, offset);
       if (stamp === null) continue;
-      if (priceCols.some((c) => /^[+-]?\d+\.\d+$/.test(cells[c] ?? ''))) { decimalComma = false; break; }
+      if (priceCols.some((c) => /^[+-]?(?:\d+|\d{1,3}(?:,\d{3})+)\.\d+$/.test(cells[c] ?? ''))) { decimalComma = false; break; }
     }
   }
 
