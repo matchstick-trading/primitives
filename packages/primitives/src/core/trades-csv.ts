@@ -105,7 +105,7 @@ export function readTradesCsv(text: string, options: TradesCsvOptions | null = {
     if (ms === null || Number.isNaN(ms) || (ISO_Z.test(raw) && new Date(ms).toISOString().slice(0, 19) !== raw.slice(0, 19))) return false;
     return col.side < 0 || (cells[col.side] ?? '').trim().toLowerCase() in SIDES;
   };
-  if (decimalComma && cellsOf.some((cells) => readable(cells) && [col.price, col.size].some((c) => POINT_DECIMAL.test(cells[c] ?? '')))) decimalComma = false;
+  if (decimalComma && cellsOf.slice(0, maxRows).some((cells) => readable(cells) && [col.price, col.size].some((c) => POINT_DECIMAL.test(cells[c] ?? '')))) decimalComma = false;
   const fileUsesComma = delimiter !== ',';
 
   const parsed: Array<{ line: number; trade: { t: string; price: string; size: string; side: TapeSide }; ms: number }> = [];

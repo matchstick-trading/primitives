@@ -115,3 +115,13 @@ describe('readTradesCsv: the decimal convention comes from rows that can be read
     expect(rows[0]).toMatchObject({ price: '1.080', size: '1.200' });
   });
 });
+
+// Codex review round 11: rows past maxRows are not loaded, so they cannot set the convention for the rows that are.
+describe('readTradesCsv: rows past maxRows do not rescale loaded trades', () => {
+  it('keeps 1,080 / 1,200 as 1.080 / 1.200 when only an unloaded row writes a point', () => {
+    const csv = 'time;price;size;side\n2026-01-05T14:30:00Z;1,080;1,200;buy\n2026-01-05T14:30:01Z;1.080;1;buy';
+    const { rows } = readTradesCsv(csv, { maxRows: 1 });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ price: '1.080', size: '1.200' });
+  });
+});
