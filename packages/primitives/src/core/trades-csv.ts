@@ -98,7 +98,14 @@ export function readTradesCsv(text: string, options: TradesCsvOptions | null = {
   const records = lines.slice(firstLine + 1).filter((l) => l.text.trim() !== '');
   let decimalComma = delimiter !== ',';
   const cellsOf = records.map((r) => splitLine(r.text, delimiter));
-  if (decimalComma && cellsOf.some((cells) => [col.price, col.size].some((c) => POINT_DECIMAL.test(cells[c] ?? '')))) decimalComma = false;
+  // Only a row that will be read (a real time and a known side) says how the file writes decimals; a row refused for those says nothing.
+  const readable = (cells: string[]) => {
+    const raw = cells[col.time] ?? '';
+    const ms = ISO_Z.test(raw) ? Date.parse(raw.replace(/\.\d+Z$/, 'Z')) : readTime(raw);
+    if (ms === null || Number.isNaN(ms) || (ISO_Z.test(raw) && new Date(ms).toISOString().slice(0, 19) !== raw.slice(0, 19))) return false;
+    return col.side < 0 || (cells[col.side] ?? '').trim().toLowerCase() in SIDES;
+  };
+  if (decimalComma && cellsOf.some((cells) => readable(cells) && [col.price, col.size].some((c) => POINT_DECIMAL.test(cells[c] ?? '')))) decimalComma = false;
   const fileUsesComma = delimiter !== ',';
 
   const parsed: Array<{ line: number; trade: { t: string; price: string; size: string; side: TapeSide }; ms: number }> = [];

@@ -104,3 +104,14 @@ describe('readTradesCsv: an inherited property name is not a side', () => {
     expect(issues.map((i) => i.line)).toEqual([4]);
   });
 });
+
+// Codex review round 6: a row refused for its time or side must not decide how every other row's numbers are read.
+describe('readTradesCsv: the decimal convention comes from rows that can be read', () => {
+  it('reads 1,080 and 1,200 as decimal commas when the only point-decimal row has a bad time', () => {
+    const csv = 'time;price;size;side\n2026-01-05T14:30:05Z;1,080;1,200;buy\nnot-a-time;1.080;1;sell';
+    const { rows, issues } = readTradesCsv(csv);
+    expect(issues.map((i) => i.line)).toEqual([3]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ price: '1.080', size: '1.200' });
+  });
+});

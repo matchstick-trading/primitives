@@ -5,6 +5,7 @@ Developer preview: names, parts and data shapes can change between versions. Ver
 ## 0.0.13
 
 - `parseBarsCsv`: in a semicolon or tab file, a row refused for its time no longer decides that the file writes decimal points (it could turn `1,080` into 1080 in the rows that were kept). Found by the Codex review of this release.
+- `readTradesCsv`: in a semicolon or tab file, a row refused for its time or side no longer decides that the file writes decimal points. Found by the Codex review of this release.
 - `readTradesCsv`: a price or size written `.25`, `10.` or (in a decimal-comma file) `,25` is read as `0.25`, `10` and `0.25` instead of the trade being dropped by the tape's rules, and a date that does not exist (`2026-02-30`) is named as that row's problem instead of reordering the valid rows around it; a price written `.25` or `10.` now also settles that a file writes decimal points, so `1,200` beside it is a thousand, and a side such as `constructor` is refused like any other bad side. Found by the Codex review of this release; trade markers also follow a bar array refilled at the same length (the window of a history sliding forward).
 
 - First-hour help (DEV-2026-11-567). Nothing about what is drawn changes.
