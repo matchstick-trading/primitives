@@ -591,7 +591,7 @@ export interface TradeMarkersProps {
  */
 function TradeMarkers({ trades, intervalMs, size = 10, className }: TradeMarkersProps) {
   const { bars, frame, readoutId } = useChart('TradeMarkers');
-  const placed = useMemo(() => placeTradeMarkers(trades, bars, intervalMs), [trades, bars, bars.length, intervalMs]);
+  const placed = useMemo(() => placeTradeMarkers(trades, bars, intervalMs), [trades, bars, bars.length, bars[0], bars[bars.length - 1], intervalMs]); // first and last too: a host may refill the same array at the same length
   const { first, last, x, y } = frame;
   const { markers } = placed;
   // The markers are in time order, so the ones in view are a run found by search.
