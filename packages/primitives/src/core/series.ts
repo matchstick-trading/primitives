@@ -330,6 +330,7 @@ export function resolveSeries(barTimes: readonly number[], input: SeriesInput, o
       // Only a usable point goes on: an object with a readable time, a known kind, and a finite number on a value.
       const usable: SeriesPoint[] = [];
       let bad = 0;
+      let numeric = 0; // points whose time is a number: the bars' format, not a series point's
       for (let i = 0; i < input.points.length; i++) {
         const p = input.points[i] as SeriesPoint | null | undefined;
         const ok = typeof p === 'object' && p !== null && isIso(p.t)
@@ -337,11 +338,13 @@ export function resolveSeries(barTimes: readonly number[], input: SeriesInput, o
         if (ok) usable.push(p as SeriesPoint);
         else {
           bad++;
+          if (typeof p === 'object' && p !== null && typeof (p as { t?: unknown }).t === 'number') numeric++;
           // A rejected point with a readable time stays as an unknown, so an as-of alignment cannot carry the value before it across.
           if (typeof p === 'object' && p !== null && isIso(p.t)) usable.push({ t: p.t, kind: 'unknown' });
         }
       }
       if (bad > 0) problems.push(`${name} has ${bad} point${bad === 1 ? '' : 's'} that cannot be used (a missing time, a time that is not ISO-8601 UTC ending in Z, an unknown kind, or a value that is not a finite number), so ${bad === 1 ? 'it was' : 'they were'} left out.`);
+      if (numeric > 0) problems.push(`${name} has ${numeric} point${numeric === 1 ? '' : 's'} with a time given as a number. Bars take Unix milliseconds; series points take ISO-8601 UTC text such as 2026-01-05T14:30:00Z (new Date(ms).toISOString() converts, or use pointsFromValues).`);
       let prev = Number.NEGATIVE_INFINITY;
       let ordered = true;
       for (const p of usable) {

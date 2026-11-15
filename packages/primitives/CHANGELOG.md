@@ -2,9 +2,23 @@
 
 Developer preview: names, parts and data shapes can change between versions. Versions are `0.0.x` until a `0.1.0`.
 
-## Unreleased
+## 0.0.13
 
-- `Chart.Root` takes `validatedBars`: promise your bars are clean and the chart skips the per-bar check, which matters for a very long series replaced on every update. Default off. A very long series also no longer sorts every gap to find its usual gap (a fixed pseudo-random sample of 20 000 gaps is used above 20 000 bars).
+- `parseBarsCsv`: a semicolon or tab file whose prices carry thousands commas (`4,725.50`), with or without a header row, is read as writing decimal points instead of failing with a numeric error.
+- `parseBarsCsv`: in a semicolon or tab file, a row refused for its time no longer decides that the file writes decimal points (it could turn `1,080` into 1080 in the rows that were kept). Found by the Codex review of this release.
+- `parseBarsCsv`: the point-decimal check now also recognises `.25` and `10.`, and looks at every row being loaded (it stopped after 100), so a file that first writes a point later no longer reads earlier `4,725` / `1,200` as 4.725 / 1.2. Found by the Codex review of this release.
+- `readTradesCsv`: rows past `maxRows` no longer set the decimal convention for the rows that are loaded. Found by the Codex review of this release.
+- `readTradesCsv`: in a semicolon or tab file, a row refused for its time or side no longer decides that the file writes decimal points. Found by the Codex review of this release.
+- `readTradesCsv`: a price or size written `.25`, `10.` or (in a decimal-comma file) `,25` is read as `0.25`, `10` and `0.25` instead of the trade being dropped by the tape's rules, and a date that does not exist (`2026-02-30`) is named as that row's problem instead of reordering the valid rows around it; a price written `.25` or `10.` now also settles that a file writes decimal points, so `1,200` beside it is a thousand, and a side such as `constructor` is refused like any other bad side. Found by the Codex review of this release; trade markers also follow a bar array refilled at the same length (the window of a history sliding forward).
+
+- First-hour help (DEV-2026-11-567). Nothing about what is drawn changes.
+  - In development (not in a production build), `Chart.Root` logs one console warning when it leaves bars out ("3 of 3 bars left out of the chart: 3 with a timestamp that is text (an ISO date or digits): a bar timestamp is a number in Unix ms") or when every bar looks stamped in Unix seconds, which draws January 1970. An empty or missing list says nothing, since that is a chart still loading. `validatedBars` skips the check.
+  - A series point whose time is a number is named in the series' problems ("Bars take Unix milliseconds; series points take ISO-8601 UTC text"). Both time formats stay; the README now shows them side by side.
+  - The four `examples/*.mjs` scripts say to run `npm run build` first in a clone (they import the built package); from the npm copy nothing changes.
+
+- Trade markers (DEV-2026-11-561): `Chart.TradeMarkers` draws one mark per trade on its bar at its price (a triangle up for a buy, down for a sell, a diamond for an unknown side). Display only. `readTradesCsv` (core) reads a trades file (time, price, size, side) into the rows `Tape` and the markers take, names each bad row by its line in the file and keeps prices and sizes as the exact text written; `describeTradesCsv` gives a status line; `placeTradeMarkers` is the bar-and-price lookup behind the part. Additive; the names can change before a release (#467).
+
+- `Chart.Root` takes `validatedBars`: promise your bars are clean and the chart skips the per-bar check, which matters for a very long series replaced on every update. Default off. A very long series also no longer sorts every gap to find its usual gap (a fixed pseudo-random sample of 2 000 gaps is used above 2 000 bars), and `barsAreDaily` reuses that cached answer.
 
 - Fixes for live and interactive charts, found by three independent bug-hunting runs:
   - `followLiveEdge` on an empty or short chart keeps every bar in view instead of sliding the view past the first bar.
@@ -14,6 +28,25 @@ Developer preview: names, parts and data shapes can change between versions. Ver
   - `applyTick` continues the newest bar's own grid, so daily bars stamped at a local midnight (or a CSV with a UTC offset) take ticks instead of dropping them as late.
   - `Scrubber`: a second pointer during a drag no longer begins a second gesture, and the thumb's keys do nothing during a drag, so a release commits once.
   - `barInterval` is recomputed when a host refills the same array; a trade without an `id` no longer collides with another row's given id.
+
+- Input fixes from Fable round 2 (DEV-2026-11-552):
+  - A bar without `volume` draws no NaN in `Chart.Volume`, the readout and table leave volume out instead of printing "undefined", and `applyTick` starts such a bar's volume from 0.
+  - The CSV reader honours an hours-only offset (`+01`, `-05`, `+00`).
+  - In a tab or semicolon file whose prices use decimal points, a comma in a number is a thousands separator (`12,345`), not a decimal comma.
+  - A 14-digit or 12-digit stamp such as `20240102143000` is read as that date-time instead of a 1970 or 1976 Unix time.
+  - A header-less file's extra columns and a blank-header column are read as series named `Column N` instead of being dropped.
+  - `csvAdapter.read` and `parseBarsCsv` return an error result, not a throw, for input that is not text or for `null` options.
+  - A column named `volatility` or `vol_change` is no longer read as volume.
+  - `snapToBar` returns `null` with no bars (it made an anchor at 1970), so `Drawings.Layer` places nothing on an empty chart.
+  - `Scrubber.Thumb` leaves arrows, Home and End with Alt, Ctrl or Meta held to the browser.
+  - `Chart.Root` rescales when the newest or first bar is replaced in place, or the same array is refilled at the same length.
+Fixes from the first outside user, all on daily bars.
+
+- `TimeAxis` prints dates ("Nov 9", with the year when it changes) when the bars are a day or more apart; intraday bars still print HH:MM. `formatBarDate` and `barsAreDaily` are in the core. A `format` prop still wins.
+- The first `TimeAxis` label no longer clips at the chart's left edge: when centring it would cross the edge, it starts at the edge (#463).
+- `Study.Line`: `name` is optional (a line with none is listed under its `id`, or "Study", instead of drawing without a Legend entry), and `values` (one number per bar, what `sma(bars, 20)` returns) is no longer deprecated for a study computed from the chart's own bars. `points` stays for a series on its own clock. `Panels.Root` is unchanged.
+- `tokens.css` sizes and fills the `Scrubber` track and draws its thumb and marks; `--mt-scrubber-height` sets the height (24px).
+- The instruction file (`AGENTS.md`) and README no longer tell an agent to avoid real data. You can chart your own data and feeds in your own app; the only rule is to check your data provider's terms before you paste market data into anything you publish or share. The examples we ship stay made-up.
 
 ## 0.0.12
 

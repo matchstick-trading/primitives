@@ -30,7 +30,11 @@ export { ATTACH_LABELS, ATTACH_MODES, DRAWING_TOOLS, DRAWING_TOOL_LABELS, FIB_RA
 export type { AttachMode, Drawing, DrawingAnchor, DrawingGeometry, DrawingHit, DrawingKeyAction, DrawingTool, SnapMode } from './drawings.js';
 export { describeBarsCsv, parseBarsCsv } from './csv-bars.js';
 export type { CsvBarsError, CsvBarsNote, CsvBarsOptions, CsvBarsResult, CsvExtraColumn } from './csv-bars.js';
-export { formatBarTime, heikinAshi } from './candles.js';
+export { describeTradesCsv, readTradesCsv } from './trades-csv.js';
+export type { TradesCsvIssue, TradesCsvOptions, TradesCsvResult } from './trades-csv.js';
+export { placeTradeMarkers } from './trade-markers.js';
+export type { TradeMarker, TradeMarkersPlaced } from './trade-markers.js';
+export { barsAreDaily, formatBarDate, formatBarTime, heikinAshi } from './candles.js';
 export { barField, barNote, fromPriceField, fromTimeField, parseBarField, toTimeField } from './drawing-fields.js';
 export { describeSelection, sameSelection, selectionAfterClearTap, selectionAfterEscape, selectionAfterTap } from './selection.js';
 export type { ChartSelection, SelectionNames } from './selection.js';

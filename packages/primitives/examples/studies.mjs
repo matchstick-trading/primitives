@@ -1,4 +1,4 @@
-// Core without React: indicator series on synthetic bars. Run: node examples/studies.mjs
+// Core without React: indicator series on synthetic bars. Run: node examples/studies.mjs (in a clone, run `npm run build` first; the npm copy is already built)
 import { sma, ema, rsi } from '@matchstick-trading/primitives/core';
 
 const bars = Array.from({ length: 30 }, (_, i) => {

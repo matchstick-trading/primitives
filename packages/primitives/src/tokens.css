@@ -274,3 +274,11 @@
 :where([data-part='plot'] [data-part='profile-row'][data-value-area] [data-change='down']) { fill: color-mix(in srgb, var(--mt-ink-down) 60%, transparent); }
 :where([data-part='plot'] [data-part='poc']) { stroke: var(--mt-focus); stroke-width: 1.5; }
 :where([data-part='plot'] :is([data-part='vah'], [data-part='val'])) { stroke: currentColor; stroke-opacity: 0.6; stroke-dasharray: 5 4; }
+
+/*
+ * Scrubber: a track with a size and a faint fill, a thumb you can see, marks tinted with the warning colour. Without
+ * these the track has no height and draws nothing. :where() keeps them at zero specificity, so your own rules win.
+ */
+:where([data-part='scrubber-track']) { position: relative; inline-size: 100%; block-size: var(--mt-scrubber-height, 24px); background: color-mix(in srgb, currentColor 14%, transparent); border-radius: 4px; touch-action: none; }
+:where([data-part='scrubber-mark']) { position: absolute; inset-block: 0; min-inline-size: 2px; background: color-mix(in srgb, var(--mt-warn) 45%, transparent); }
+:where([data-part='scrubber-thumb']) { position: absolute; inset-block-start: 0; inline-size: 12px; block-size: 100%; margin-inline-start: -6px; border-radius: 3px; background: currentColor; }

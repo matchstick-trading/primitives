@@ -307,9 +307,10 @@ export function hitTest(drawings: readonly Drawing[], bars: readonly CandleBar[]
  */
 export function snapToBar(point: { x: number; y: number }, bars: readonly CandleBar[], frame: ChartFrame, mode: SnapMode = 'off'): DrawingAnchor | null {
   if (!point || !isNumber(point.x) || !isNumber(point.y)) return null;
+  if (bars.length === 0) return null; // with no bars a pointer has no time
   const index = frame.indexAt(point.x);
   const free = frame.priceAt(point.y);
-  if (mode !== 'magnet' || bars.length === 0) return { timestamp: timeOfIndex(bars, index), price: free };
+  if (mode !== 'magnet') return { timestamp: timeOfIndex(bars, index), price: free };
   const bar = bars[Math.min(bars.length - 1, Math.max(0, Math.round(index)))];
   let price = free;
   let best = MAGNET_REACH;

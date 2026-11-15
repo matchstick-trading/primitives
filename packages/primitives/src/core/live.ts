@@ -59,7 +59,7 @@ export function applyTick(bars: readonly CandleBar[], tick: LiveTick, interval: 
     high: Math.max(last.high, tick.price),
     low: Math.min(last.low, tick.price),
     close: tick.price,
-    volume: last.volume + tick.size,
+    volume: (Number.isFinite(last.volume) ? last.volume : 0) + tick.size, // a bar read without volume starts from none
   };
   return { bars: [...bars.slice(0, -1), updated], outcome: 'updated' };
 }
