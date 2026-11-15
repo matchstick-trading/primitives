@@ -139,3 +139,36 @@ describe('parseBarsCsv: a headerless file with grouped prices', () => {
     expect(bars[0]).toMatchObject({ open: 4725.5, close: 4728.75 });
   });
 });
+
+// Codex review round 9 (public PR 6): the point convention must be found however the point is written, and anywhere in the file.
+describe('parseBarsCsv: the point convention in .25 / 10. prices and past row 100', () => {
+  it('reads volume 1,200 as 1200 when prices are written .25', () => {
+    const { bars, errors } = parseBarsCsv('time;open;high;low;close;volume\n2026-01-05T14:30:00Z;.25;.30;.20;.28;1,200');
+    expect(errors).toEqual([]);
+    expect(bars[0]).toMatchObject({ open: 0.25, volume: 1200 });
+  });
+  it('reads volume 1,200 as 1200 when prices are written 10.', () => {
+    const { bars, errors } = parseBarsCsv('time;open;high;low;close;volume\n2026-01-05T14:30:00Z;10.;11.;9.;10.;1,200');
+    expect(errors).toEqual([]);
+    expect(bars[0]).toMatchObject({ open: 10, volume: 1200 });
+  });
+  it('reads the first 100 grouped rows as 4725 when the first explicit point comes on row 101', () => {
+    const rows = ['time;open;high;low;close;volume'];
+    for (let i = 0; i < 100; i++) rows.push(`2026-01-05T14:${String(i % 60).padStart(2, '0')}:${String(Math.floor(i / 60)).padStart(2, '0')}Z;4,725;4,730;4,720;4,728;1,200`);
+    rows.push('2026-01-06T14:30:00Z;4725.50;4730;4720;4728;1,200');
+    const { bars } = parseBarsCsv(rows.join('\n'));
+    expect(bars).toHaveLength(101);
+    expect(bars[0]).toMatchObject({ open: 4725, volume: 1200 });
+    expect(bars[100]).toMatchObject({ open: 4725.5 });
+  });
+});
+
+// Codex review round 10: a form readNumber refuses (4,725.) must not set the convention for the rows that load.
+describe('parseBarsCsv: a refused number form does not rescale kept rows', () => {
+  it('keeps 1,080 as 1.080 when the only point row writes 4,725.', () => {
+    const { bars, errors } = parseBarsCsv('time;open;high;low;close\n1704205800;1,080;1,090;1,070;1,085\n1704205860;4,725.;4,730.;4,720.;4,728.');
+    expect(errors).toHaveLength(1);
+    expect(bars).toHaveLength(1);
+    expect(bars[0]).toMatchObject({ open: 1.08 });
+  });
+});
