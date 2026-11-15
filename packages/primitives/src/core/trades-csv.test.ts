@@ -94,3 +94,13 @@ describe('readTradesCsv: a leading or trailing point still settles the file conv
     expect(rows[0]).toMatchObject({ price: '0.25', size: '1200' });
   });
 });
+
+// Codex review round 3: a side that is a name on every object ("constructor") is just a bad side.
+describe('readTradesCsv: an inherited property name is not a side', () => {
+  it('refuses side "constructor" without disturbing the valid rows around it', () => {
+    const csv = ['time,price,size,side', '2026-01-05T14:30:05Z,1,1,buy', '2026-01-05T14:30:06Z,1,1,sell', '2026-01-05T14:30:04Z,1,1,constructor'].join('\n');
+    const { rows, issues } = readTradesCsv(csv);
+    expect(rows.map((r) => r.t)).toEqual(['2026-01-05T14:30:05Z', '2026-01-05T14:30:06Z']);
+    expect(issues.map((i) => i.line)).toEqual([4]);
+  });
+});
