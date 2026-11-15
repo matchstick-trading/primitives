@@ -63,7 +63,9 @@ function compareInstants(a: string, b: string): number {
 /** An exact decimal string from a written price or size, or null when it is not a plain positive number. */
 function readDecimal(cell: string, decimalComma: boolean): string | null {
   const text = decimalComma ? cell.replace(',', '.') : GROUPED.test(cell) ? cell.replace(/,/g, '') : cell;
-  return /^(\d+\.?\d*|\.\d+)$/.test(text) ? text : null;
+  if (!/^(\d+\.?\d*|\.\d+)$/.test(text)) return null;
+  // `.25` and `10.` are written numbers; the tape wants digits on both sides of a point, so spell them out (text only, no float).
+  return text.replace(/^\./, '0.').replace(/\.$/, '');
 }
 
 export function readTradesCsv(text: string, options: TradesCsvOptions | null = {}): TradesCsvResult {
@@ -120,6 +122,7 @@ export function readTradesCsv(text: string, options: TradesCsvOptions | null = {
     const side = SIDES[sideText];
     const problems: string[] = [];
     if (t === null || ms === null || Number.isNaN(ms)) problems.push('the time is not a UTC date-time or a Unix time');
+    else if (exact && new Date(ms).toISOString().slice(0, 19) !== rawTime.slice(0, 19)) problems.push('the date does not exist'); // Date.parse rolls Feb 30 into March
     if (price === null) problems.push('the price is not a number');
     else if (!/[1-9]/.test(price)) problems.push('the price must be above zero');
     if (size === null) problems.push('the size is not a number');

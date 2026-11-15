@@ -4,6 +4,8 @@ Developer preview: names, parts and data shapes can change between versions. Ver
 
 ## 0.0.13
 
+- `readTradesCsv`: a price or size written `.25`, `10.` or (in a decimal-comma file) `,25` is read as `0.25`, `10` and `0.25` instead of the trade being dropped by the tape's rules, and a date that does not exist (`2026-02-30`) is named as that row's problem instead of reordering the valid rows around it. Found by the Codex review of this release.
+
 - First-hour help (DEV-2026-11-567). Nothing about what is drawn changes.
   - In development (not in a production build), `Chart.Root` logs one console warning when it leaves bars out ("3 of 3 bars left out of the chart: 3 with a timestamp that is text (an ISO date or digits): a bar timestamp is a number in Unix ms") or when every bar looks stamped in Unix seconds, which draws January 1970. An empty or missing list says nothing, since that is a chart still loading. `validatedBars` skips the check.
   - A series point whose time is a number is named in the series' problems ("Bars take Unix milliseconds; series points take ISO-8601 UTC text"). Both time formats stay; the README now shows them side by side.

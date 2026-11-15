@@ -66,3 +66,22 @@ describe('readTradesCsv: times keep their recorded precision', () => {
   });
 });
 
+
+// Codex review of the 0.0.13 sync (public primitives #6): a row the reader accepts must not make valid rows vanish.
+describe('readTradesCsv: one bad row does not take valid trades with it', () => {
+  it('keeps .25, 10. and a decimal comma ,25 as exact decimal strings instead of dropping the trade', () => {
+    const { rows, issues } = readTradesCsv('time,price,size,side\n2026-01-05T14:30:05Z,.25,10.,buy');
+    expect(issues).toEqual([]);
+    expect(rows[0]).toMatchObject({ price: '0.25', size: '10' });
+    const comma = readTradesCsv('time;price;size;side\n2026-01-05T14:30:05Z;100,5;,25;buy');
+    expect(comma.issues).toEqual([]);
+    expect(comma.rows[0]).toMatchObject({ price: '100.5', size: '0.25' });
+  });
+
+  it('names a date that does not exist (Feb 30) and keeps the ascending rows around it in order', () => {
+    const csv = ['time,price,size,side', '2026-03-01T14:30:05Z,1,1,buy', '2026-03-02T14:30:05Z,1,1,buy', '2026-02-30T14:30:05Z,1,1,buy'].join('\n');
+    const { rows, issues } = readTradesCsv(csv);
+    expect(rows.map((r) => r.t)).toEqual(['2026-03-01T14:30:05Z', '2026-03-02T14:30:05Z']);
+    expect(issues.map((i) => i.line)).toEqual([4]);
+  });
+});
