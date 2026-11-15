@@ -34,6 +34,8 @@ file. That licence covers only the example folder it sits in; the package under 
   [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/replay-on-a-chart), no account needed.
 - [Review an agent’s trades](examples/agent-review): replay a made-up session while a made-up agent suggests trades; accept or reject each one as it appears.
   [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/agent-review), no account needed.
+- [Broker screen](examples/broker-screen): a chart, a price ladder and a tape fed by a made-up broker feed.
+  [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/broker-screen), no account needed.
 
 ## Version and supported scope
 

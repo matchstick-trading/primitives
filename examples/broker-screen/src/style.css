@@ -1,0 +1,8 @@
+body { font: 16px/1.5 system-ui, sans-serif; max-width: 64rem; margin: 1.5rem auto; padding: 0 16px; }
+h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
+.screen { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 720px) { .screen { grid-template-columns: 1fr; } }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+td, th { padding: 1px 6px; text-align: right; }
+caption { text-align: left; font-weight: 600; }
+button { font: inherit; min-height: 44px; padding: 0 14px; margin-top: 8px; }
