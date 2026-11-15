@@ -1,6 +1,6 @@
 # Matchstick Primitives
 
-> Headless, keyboard-first React parts for trading screens, with a plain-TypeScript core. Developer preview 0.0.12. Every example uses synthetic data.
+> Headless, keyboard-first React parts for trading screens, with a plain-TypeScript core. Developer preview 0.0.13. Every example uses synthetic data.
 
 - [README.md](README.md): the parts, a first chart, the core, your own data.
 - [AGENTS.md](AGENTS.md): what an agent may do with this package, what to ask first, what not to do.
@@ -10,7 +10,8 @@
 - Docs: https://ui.matchstick.trading/docs/getting-started
 - Licence: Apache-2.0 (LICENSE). Source is in src/. Free building blocks for trading screens; issues are open at https://github.com/matchstick-trading/primitives/issues.
 - Live demo: https://ui.matchstick.trading/docs/live (made-up data).
+- Trade markers: `Chart.TradeMarkers` (inside `Chart.Plot`) marks trades on their bars; `readTradesCsv` (core) reads a trades file with line-numbered issues. Display only. README.md, "Mark your trades".
 - Full screen: `Fullscreen.Frame` wraps the chart and `Fullscreen.Toggle` (inside it) enters and leaves; the browser's full screen where there is one, a full-page fallback otherwise (README, "Full screen"). Escape clears the chart's crosshair or selection first, then leaves.
 - Selection: `Selection.Root`, `Selection.Layer`, `Series.Root`, `Series.Select`, `Series.Options` and an `id` on `Study.Line` / `Study.Band` give one selection (drawing, series or study). Rules and parts are in README.md, "Select the series and studies". Series options are the host's to fill.
-- Series: a series is `{ id, label, points[] }` with `{ t, kind, v? }` points (ISO-8601 UTC `t`; kinds `value`, `missing`, `market-closed`, `not-applicable`, `halted`, `unknown`); `Panels.Root` and `Study.Line` take `points`; bare `values` is a shim that is still accepted in this version and will be removed in a later one. `csvAdapter`, `validateSeriesSet`, `report` are in the core. See README.md, "Give a series a clock".
+- Series: a series is `{ id, label, points[] }` with `{ t, kind, v? }` points (ISO-8601 UTC `t`; kinds `value`, `missing`, `market-closed`, `not-applicable`, `halted`, `unknown`); `Panels.Root` and `Study.Line` take `points`; `Study.Line` also takes `values` (one number per bar, what `sma(bars, 20)` returns) for a study computed from the chart's own bars; for `Panels.Root` bare `values` is a shim that will be removed in a later version. `csvAdapter`, `validateSeriesSet`, `report` are in the core. See README.md, "Give a series a clock".
 - Panels: `Panels.Root` (series and bands), `Panels.Layer` (inside `Chart.Plot`), `Panels.List` and `Panels.Move` put more than one series on a chart in bands with their own price scales, and move a series between bands by buttons, not a drag. The bars, volume and drawings stay in the first band. Rules and parts are in README.md, "Panels and several series".

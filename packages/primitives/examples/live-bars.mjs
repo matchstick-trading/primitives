@@ -1,5 +1,5 @@
 // Live bars, headless: fold a stream of ticks into one-minute bars, and keep a viewport on the newest bar.
-// Synthetic ticks only, no feed and no clock. Run: node examples/live-bars.mjs
+// Synthetic ticks only, no feed and no clock. Run: node examples/live-bars.mjs (in a clone, run `npm run build` first; the npm copy is already built)
 import { applyTick, atLiveEdge, followLiveEdge } from '@matchstick-trading/primitives/core';
 
 const MINUTE = 60_000;

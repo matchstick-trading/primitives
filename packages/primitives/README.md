@@ -10,7 +10,7 @@ Free building blocks for trading screens, fed by Matchstick replay or by your ow
 
 Headless, keyboard-first React parts for trading screens, with a plain-TypeScript core under them. Charts, studies,
 drawings, a volume profile, a replay transport and scrubber, a cursor, a depth profile, a diff table, a symbol search,
-a receipt and a notice. Developer preview, version 0.0.12: names and parts can change.
+a receipt and a notice. Developer preview, version 0.0.13: names and parts can change.
 
 Every demo and example uses made-up (synthetic) data. No market data ships in this package, and the parts place no
 orders: there is no order entry, account or trading feature here.
@@ -79,10 +79,22 @@ For a series of hundreds of thousands of bars that you replace on every update, 
 
 The crosshair's price label (`[data-part='crosshair-price']`) already takes the text colour at 11px from `tokens.css`; override it the same way as the axis labels if you want.
 
+### Two time formats
+
+Bars and series points write time differently, on purpose:
+
+| Where | Format | Example |
+|---|---|---|
+| A bar's `timestamp` (`Chart.Root bars`) | a number, Unix **milliseconds** | `1700000000000` |
+| A series point's `t` (`Study.Line points`, `Panels.Root`) | text, **ISO-8601 UTC** ending in `Z` | `2023-11-14T22:13:20Z` |
+
+`new Date(ms).toISOString()` turns the first into the second, and `pointsFromValues(bars, values)` does it for a whole series. In development the chart tells you when it gets this wrong: a console warning such as "3 of 3 bars left out of the chart: 3 with a timestamp that is text", or "bar timestamps look like Unix seconds" (seconds draw January 1970), and a series with a numeric `t` names the format it wanted. Production builds stay silent. Nothing is converted for you.
+
 ### Add a scrubber
 
-`Scrubber` is a track you position with CSS: it has no size of its own, so give the track `position: relative` and a
-height, or it is invisible. Marks and the thumb are placed with `left` as a percentage of the track.
+`Scrubber` is a track you position with CSS. From 0.0.13 `tokens.css` gives the track a height (`--mt-scrubber-height`,
+24px) and a faint fill, and draws the thumb and marks; before that the track had no height and was invisible. Marks and
+the thumb are placed with `left` as a percentage of the track. Your own CSS wins:
 
 ```css
 [data-part='scrubber-track'] { position: relative; height: 24px; background: #8882; }
@@ -126,6 +138,23 @@ export function ReplayScrubber() {
 ```
 
 `VolumeProfile.Table` is the same profile as text and also needs a `Chart.Root` above it: place it inside `Chart.Root` after `Chart.Plot` (it is an HTML table, not SVG). Outside `Chart.Root` it throws "Chart VolumeProfile.Table needs a Chart.Root above it."
+
+### Mark your trades
+
+`Chart.TradeMarkers` goes inside `Chart.Plot` after the candles and draws one mark per trade, on its bar, at its price: a triangle up for a buy, down for a sell, a diamond when the side is unknown. It only displays what you give it. Read a trades file (columns `time`, `price`, `size`, `side`) with `readTradesCsv`; it names a bad row by its line in the file and keeps prices and sizes as the exact text written.
+
+```tsx
+import { Chart, readTradesCsv } from '@matchstick-trading/primitives';
+
+const { rows: trades, issues } = readTradesCsv(await file.text()); // issues: [{ line, message }]
+
+<Chart.Plot>
+  <Chart.Candles />
+  <Chart.TradeMarkers trades={trades} />
+</Chart.Plot>
+```
+
+Colour the marks with `[data-part='trade-marker'][data-side='buy'] { fill: ... }` (and `sell`, `unknown`). A trade with no bar to sit on (before the first bar, after the last, or in a gap) is left out; `data-outside` on the marker group counts them. Thousands of trades are fine: each side is one path and only the markers in view are built.
 
 ### Add a depth profile
 
@@ -215,7 +244,7 @@ nav[aria-label] > * + * { margin-inline-start: 0.5rem; } /* space the transport 
 
 ### Give a series a clock (`points`)
 
-A series is a list of `{ t, kind, v? }` points, not a bare array: `t` is an ISO-8601 UTC string, `kind` is `value`, `missing`, `market-closed`, `not-applicable`, `halted` or `unknown`, and a `value` point has a finite `v` (zero is a value; NaN and infinities are refused). `Panels.Root` series and `Study.Line` take `points` and line them up with the bars by time, so a gap in the data is a gap on the chart, named in the list. `values` (an array with one number or null per bar) still works for now and will be removed in a later version; `pointsFromValues(bars, values)` converts one (it takes the bars, or their times in ms; a null or NaN becomes `not-applicable` unless you pass another gap kind).
+A series is a list of `{ t, kind, v? }` points, not a bare array: `t` is an ISO-8601 UTC string, `kind` is `value`, `missing`, `market-closed`, `not-applicable`, `halted` or `unknown`, and a `value` point has a finite `v` (zero is a value; NaN and infinities are refused). `Panels.Root` series and `Study.Line` take `points` and line them up with the bars by time, so a gap in the data is a gap on the chart, named in the list. `Study.Line` also takes `values` (one number or null per bar, which is what a study function returns) when the study was computed from the chart's own bars, so `values={sma(bars, 20)}` needs no conversion. For `Panels.Root`, `values` still works for now and will be removed in a later version; `pointsFromValues(bars, values)` converts one (it takes the bars, or their times in ms; a null or NaN becomes `not-applicable` unless you pass another gap kind).
 
 ```ts
 import { csvAdapter, toSeriesSet, validateSeriesSet, report } from '@matchstick-trading/primitives/core';
@@ -235,10 +264,10 @@ A study is two things: a function from `@matchstick-trading/primitives/core` tha
 Two things the types will not say until the first build. `vwap`'s `bands` is a list of multipliers, not a count or a flag: `vwap(bars, { bands: [1] })` gives one band (`.bands[0].upper` and `.lower`), `[1, 2]` gives two. `studyRange` returns one `[low, high]` span, but `Chart.Root`'s `include` returns a list of spans, so wrap it: `include={(visible) => [studyRange(visible, band.upper, band.lower)]}` (keep the callback stable with `useCallback`).
 
 ```tsx
-import { Chart, Study, ema, pointsFromValues } from '@matchstick-trading/primitives';
+import { Chart, Study, ema } from '@matchstick-trading/primitives';
 
 import { bars } from './FirstChart'; // the `bars` list exported by the first chart above, saved as FirstChart.tsx
-const ema10 = pointsFromValues(bars, ema(bars, 10)); // compute once, outside the component, or in useMemo
+const ema10 = ema(bars, 10); // one number per bar; compute once, outside the component, or in useMemo
 
 export function ChartWithEma() {
   return (
@@ -247,7 +276,7 @@ export function ChartWithEma() {
         <Study.Legend />
         <Chart.Plot>
           <Chart.Candles />
-          <Study.Line points={ema10} name="EMA 10" />
+          <Study.Line values={ema10} name="EMA 10" />
           <Chart.PriceAxis />
           <Chart.TimeAxis />
         </Chart.Plot>
@@ -419,7 +448,7 @@ A tap on a series line selects it (`{ kind: 'series', id }`, one selection at a 
 
 | Import | What it is |
 |---|---|
-| `Chart` | Root, Plot, Grid, Volume, Candles (candle, hollow, ohlc, line, area, heikin-ashi), PriceAxis, TimeAxis, Crosshair, Readout, Reset, Autoscale. Pan, zoom and axis keys built in. |
+| `Chart` | Root, Plot, Grid, Volume, Candles (candle, hollow, ohlc, line, area, heikin-ashi), TradeMarkers, PriceAxis, TimeAxis, Crosshair, Readout, Reset, Autoscale. Pan, zoom and axis keys built in. |
 | `Study` | EMA, SMA, WMA, Bollinger, RSI, ATR and VWAP lines and bands, and a legend. |
 | `Selection`, `Series` | One selection (drawing, series or study) for the chart: `Selection.Root`, `Selection.Layer`, `Series.Root`, `Series.Select`, `Series.Options`, and an `id` on `Study.Line` and `Study.Band`. |
 | `Panels` | Several series in bands with their own price scales, and a menu to move a series between bands: `Panels.Root`, `Panels.Layer`, `Panels.List`, `Panels.Move`. |
@@ -557,8 +586,8 @@ cannot tell an emptied list from a switch to a symbol with no drawings, and a mi
 ## The core, without React
 
 `@matchstick-trading/primitives/core` is plain TypeScript with no imports outside itself: chart geometry and scales,
-the studies (`ema`, `sma`, `rsi`, `atr`, `bollinger`, `vwap`), the volume profile, the drawing model, the CSV reader
-(`parseBarsCsv`), live bars (`applyTick` folds a tick into the newest bar or opens a new one; `atLiveEdge` and `followLiveEdge` keep a viewport on the newest bar; see `examples/live-bars.mjs`), the key maps and the chart's pointer and wheel gestures (`reduceChartGesture`, a pure reducer from an event to a viewport or price-range change). Use it from any framework or from Node.
+the studies (`ema`, `sma`, `rsi`, `atr`, `bollinger`, `vwap`), the volume profile, the drawing model, the CSV readers
+(`parseBarsCsv`, `readTradesCsv`), live bars (`applyTick` folds a tick into the newest bar or opens a new one; `atLiveEdge` and `followLiveEdge` keep a viewport on the newest bar; see `examples/live-bars.mjs`), the key maps and the chart's pointer and wheel gestures (`reduceChartGesture`, a pure reducer from an event to a viewport or price-range change). Use it from any framework or from Node.
 
 ## Your own data
 

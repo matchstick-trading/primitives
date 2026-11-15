@@ -105,12 +105,12 @@ export interface StudyLineProps {
   points?: ReadonlyArray<SeriesPoint>;
   /**
    * One value per bar by position, null where the study has none. A study computed from these bars (`sma(bars, 20)`) is
-   * already by position. Give `points` for a series that comes from elsewhere. Neither given draws nothing.
-   * @deprecated Give `points` (`pointsFromValues(bars, sma(bars, 20))` makes them). `values` is removed in 0.0.7.
+   * already by position, so `values={sma(bars, 20)}` is the whole call. Give `points` for a series that comes from
+   * elsewhere, on its own clock. Neither given draws nothing.
    */
   values?: ReadonlyArray<number | null>;
-  /** Shown in the Legend and carried as `data-study`. */
-  name: string;
+  /** Shown in the Legend and carried as `data-study`. Without one the line is listed under its `id`, or "Study". */
+  name?: string;
   /** Makes the study selectable (with a Selection.Root above): by a tap on the line and by its Legend button. Unique on the chart. */
   id?: string;
   className?: string;
@@ -119,7 +119,9 @@ export interface StudyLineProps {
 /** A line through the study's values in view. It lifts the pen at every null, so a warm-up gap stays a gap. */
 const NO_VALUES: ReadonlyArray<number | null> = [];
 
-function Line({ values: given, points, name, id, className }: StudyLineProps) {
+function Line({ values: given, points, name: givenName, id, className }: StudyLineProps) {
+  // A JavaScript caller can leave the name out; a nameless line would draw but never reach the Legend.
+  const name = givenName || id || 'Study';
   const { frame, readoutId, bars } = useChart('Study.Line');
   // Points are placed on the bars by exact time; a study's own values are already one per bar.
   const resolved = useMemo(() => {

@@ -3,7 +3,10 @@ import { buttonFace, type NameProps } from './accessible-name.js';
 import { primitiveAttributes, type Change } from './attributes.js';
 import { chartFrame, clampPriceRange, dataPriceSpan, growViewport, lastBars, type ChartInclude, panPriceRange, panViewport, priceRangeMissesData, priceTicks, resolveChartKey, tickDecimals, zoomPriceRange, zoomViewport, type CandleBar, type ChartFrame, type ChartViewport, type PriceSpan } from './core/chart-scale.js';
 import { INITIAL_CHART_GESTURE, isChartGestureActive, reduceChartGesture, type ChartGestureResult, type ChartGestureState, type ChartGestureView } from './core/chart-gesture.js';
-import { heikinAshi, formatBarTime } from './core/candles.js';
+import { checkBars, devWarn } from './core/bar-check.js';
+import { barsAreDaily, formatBarDate, formatBarTime, heikinAshi } from './core/candles.js';
+import { placeTradeMarkers } from './core/trade-markers.js';
+import type { TapeRow } from './core/tape.js';
 import { AXIS_BOTTOM, MAIN_PANEL, panelBands } from './core/panels.js';
 import { PanelsContext } from './panels-context.js';
 import { SeriesContext } from './selection-context.js';
@@ -121,6 +124,11 @@ function usableBars(bars: readonly CandleBar[] | null | undefined, validated = f
 
 function Root({ bars: rawBars, viewport, onViewportChange, priceRange, onPriceRangeChange, active, onActiveChange, width: fixedWidth, height = 420, volumeShare, include, decimals: rawDecimals = 2, validatedBars = false, synthetic, className, 'aria-label': label = 'Price chart', children }: ChartRootProps) {
   const bars = useMemo(() => usableBars(rawBars, validatedBars), [rawBars, rawBars?.length, validatedBars]); // length too: a host may append to the same array
+  useEffect(() => { // development only: say why a chart is blank or in 1970
+    if (validatedBars) return;
+    const message = checkBars(rawBars, bars.length);
+    if (message !== null) devWarn(message);
+  }, [rawBars, rawBars?.length, bars.length, validatedBars]);
   const [innerViewport, setInnerViewport] = useState<ChartViewport>(() => lastBars(bars.length, 120));
   const [seenTotal, setSeenTotal] = useState(bars.length);
   const [innerActive, setInnerActive] = useState<number | null>(null);
@@ -181,7 +189,7 @@ function Root({ bars: rawBars, viewport, onViewportChange, priceRange, onPriceRa
     if (!extraInclude) return include;
     return (visible) => [...(typeof include === 'function' ? include(visible) : include ?? []), ...extraInclude(visible, bars)];
   }, [include, extraInclude, bars]);
-  const frame = useMemo(() => chartFrame(scaleBars && scaleBars.length === bars.length ? scaleBars : bars, view, { width, height: mainHeight ?? height }, { volumeShare, include: mergedInclude, priceRange: range, ...(mainHeight !== null ? { axisBottom: 0 } : {}) }), [scaleBars, bars, bars.length, view, width, height, mainHeight, volumeShare, mergedInclude, range]);
+  const frame = useMemo(() => chartFrame(scaleBars && scaleBars.length === bars.length ? scaleBars : bars, view, { width, height: mainHeight ?? height }, { volumeShare, include: mergedInclude, priceRange: range, ...(mainHeight !== null ? { axisBottom: 0 } : {}) }), [scaleBars, bars, bars.length, bars[0], bars[bars.length - 1], view, width, height, mainHeight, volumeShare, mergedInclude, range]);
   const totalHeight = mainHeight !== null ? height : frame.height;
   const plotBottom = mainHeight !== null ? height - AXIS_BOTTOM : frame.plotHeight;
   const readoutId = useId();
@@ -452,17 +460,21 @@ function PriceAxis({ className, ticks = 6 }: { className?: string; ticks?: numbe
   );
 }
 
+/** About how wide one axis-label character is at 11px in the numeric font; used only to keep the first label inside the chart. */
+const LABEL_CHAR_WIDTH = 6.8;
+
 export interface TimeAxisProps {
   className?: string;
-  /** Prints a bar's time. Default: HH:MM in UTC, with the date when the day changes. */
+  /** Prints a bar's time. Default: HH:MM in UTC, with the date when the day changes; for daily or longer bars, the date ("Nov 9"). */
   format?: (timestamp: number, previous: number | null) => string;
   /** About how many labels. Default 6, or one per 110 pixels of plot when that is fewer, so narrow charts do not overlap. */
   labels?: number;
 }
 
 /** Time labels in the gutter under the panes, spaced in whole bars. */
-function TimeAxis({ className, format = formatBarTime, labels: wanted }: TimeAxisProps) {
+function TimeAxis({ className, format, labels: wanted }: TimeAxisProps) {
   const { bars, frame, totalHeight } = useChart('TimeAxis');
+  const print = format ?? (barsAreDaily(bars) ? formatBarDate : formatBarTime);
   if (frame.last < frame.first) return null;
   const labels = wanted ?? Math.max(2, Math.min(6, Math.floor(frame.plotWidth / 110)));
   const step = Math.max(1, Math.round((frame.last - frame.first + 1) / labels));
@@ -470,7 +482,11 @@ function TimeAxis({ className, format = formatBarTime, labels: wanted }: TimeAxi
   let previous: number | null = null;
   for (let i = Math.ceil(frame.first / step) * step; i <= frame.last; i += step) {
     const t = bars[i].timestamp;
-    nodes.push(<text key={t} x={frame.x(i)} y={totalHeight - 4} textAnchor="middle">{format(t, previous)}</text>);
+    const text = print(t, previous);
+    // Centred on the bar, unless that would push the text past the left edge of the chart: then it starts at the edge.
+    const x = frame.x(i);
+    const atEdge = x < (text.length * LABEL_CHAR_WIDTH) / 2;
+    nodes.push(<text key={t} x={atEdge ? 0 : x} y={totalHeight - 4} textAnchor={atEdge ? 'start' : 'middle'}>{text}</text>);
     previous = t;
   }
   return <g className={className} data-part="time-axis" aria-hidden="true">{nodes}</g>;
@@ -498,7 +514,7 @@ function Readout({ className, format }: { className?: string; format?: (bar: Can
   const { bars, active, readoutId, decimals } = useChart('Readout');
   const bar = active === null ? undefined : bars[active];
   const f = (n: number) => n.toFixed(decimals);
-  const text = !bar ? '' : format ? format(bar, active!) : `${new Date(bar.timestamp).toISOString().slice(0, 16).replace('T', ' ')} UTC, open ${f(bar.open)}, high ${f(bar.high)}, low ${f(bar.low)}, close ${f(bar.close)}, volume ${bar.volume}`;
+  const text = !bar ? '' : format ? format(bar, active!) : `${new Date(bar.timestamp).toISOString().slice(0, 16).replace('T', ' ')} UTC, open ${f(bar.open)}, high ${f(bar.high)}, low ${f(bar.low)}, close ${f(bar.close)}${Number.isFinite(bar.volume) ? `, volume ${bar.volume}` : ''}`;
   return <output id={readoutId} className={className} aria-live="polite" data-change={bar ? changeOf(bar) : undefined}>{text}</output>;
 }
 
@@ -544,7 +560,7 @@ function Table({ className, caption = 'Bars in view' }: { className?: string; ca
       <tr key={bar.timestamp} data-change={changeOf(bar)} aria-current={i === active ? 'true' : undefined}>
         <td data-mt-numeric>{new Date(bar.timestamp).toISOString().slice(0, 16).replace('T', ' ')}</td>
         {[bar.open, bar.high, bar.low, bar.close].map((v, k) => <td key={k} data-mt-numeric>{v.toFixed(decimals)}</td>)}
-        <td data-mt-numeric>{bar.volume}</td>
+        <td data-mt-numeric>{Number.isFinite(bar.volume) ? bar.volume : ''}</td>
       </tr>,
     );
   }
@@ -557,4 +573,54 @@ function Table({ className, caption = 'Bars in view' }: { className?: string; ca
   );
 }
 
-export { Root, Plot, Grid, Candles, Volume, PriceAxis, TimeAxis, Crosshair, Readout, Reset, Autoscale, Table };
+export interface TradeMarkersProps {
+  /** Trades, oldest first, as `readTape` or `readTradesCsv` return them. */
+  trades: readonly TapeRow[];
+  /** The bar length in milliseconds, when you know it. Needed only while the chart has a single bar (a new live or replay chart), where it cannot be read from the bars. */
+  intervalMs?: number;
+  /** Marker size in chart units (CSS pixels while the chart lays itself out). Default 10. */
+  size?: number;
+  className?: string;
+}
+
+/**
+ * Trade markers: one mark per trade, on the bar it happened in, at its price. A buy is a triangle pointing up, a sell
+ * one pointing down, an unknown side a diamond, so the side never rests on colour alone. Display only: it draws what
+ * the host gives it and does nothing else. All marks of a side are one path, so thousands cost little; only the
+ * markers in view are built. A trade with no bar to sit on is left out (`data-outside` says how many).
+ */
+function TradeMarkers({ trades, intervalMs, size = 10, className }: TradeMarkersProps) {
+  const { bars, frame, readoutId } = useChart('TradeMarkers');
+  const placed = useMemo(() => placeTradeMarkers(trades, bars, intervalMs), [trades, bars, bars.length, intervalMs]);
+  const { first, last, x, y } = frame;
+  const { markers } = placed;
+  // The markers are in time order, so the ones in view are a run found by search.
+  const from = (() => { let lo = 0; let hi = markers.length; while (lo < hi) { const m = (lo + hi) >> 1; if (markers[m].index < first) lo = m + 1; else hi = m; } return lo; })();
+  const half = Math.max(1, size) / 2;
+  const d = { buy: '', sell: '', unknown: '' };
+  const count = { buy: 0, sell: 0, unknown: 0 };
+  for (let i = from; i < markers.length && markers[i].index <= last; i++) {
+    const { index, price, side } = markers[i];
+    const cx = x(index).toFixed(1);
+    const cy = y(price);
+    const top = (cy - half).toFixed(1);
+    const bottom = (cy + half).toFixed(1);
+    const l = (x(index) - half).toFixed(1);
+    const r = (x(index) + half).toFixed(1);
+    d[side] += side === 'buy' ? `M${cx} ${top}L${r} ${bottom}L${l} ${bottom}Z`
+      : side === 'sell' ? `M${cx} ${bottom}L${r} ${top}L${l} ${top}Z`
+      : `M${cx} ${top}L${r} ${cy.toFixed(1)}L${cx} ${bottom}L${l} ${cy.toFixed(1)}Z`;
+    count[side]++;
+  }
+  if (last < first) return null;
+  const say = [`${count.buy} buy`, `${count.sell} sell`, ...(count.unknown ? [`${count.unknown} side unknown`] : [])].join(', ');
+  return (
+    <g className={className} data-part="trade-markers" data-outside={placed.outside || undefined} clipPath={`url(#${readoutId}-price)`} role="img" aria-label={`Trade markers in view: ${say}`}>
+      {d.buy && <path data-part="trade-marker" data-side="buy" d={d.buy} />}
+      {d.sell && <path data-part="trade-marker" data-side="sell" d={d.sell} />}
+      {d.unknown && <path data-part="trade-marker" data-side="unknown" d={d.unknown} />}
+    </g>
+  );
+}
+
+export { Root, Plot, Grid, Candles, Volume, PriceAxis, TimeAxis, Crosshair, Readout, Reset, Autoscale, Table, TradeMarkers };

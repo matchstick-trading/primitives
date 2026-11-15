@@ -87,9 +87,10 @@ export type ScrubKeyAction = { type: 'step'; direction: -1 | 1 } | { type: 'jump
 
 /**
  * Arrow keys step one event, which only the host can define, so they resolve to a direction. Home and End jump to
- * the ends; PageUp and PageDown move 10% of the track. Any other key is left alone (null).
+ * the ends; PageUp and PageDown move 10% of the track. Any other key, or a key with Alt, Ctrl or Meta held, is left alone (null).
  */
-export function resolveScrubKey(key: string, currentFraction: number): ScrubKeyAction | null {
+export function resolveScrubKey(key: string, currentFraction: number, modifiers?: { altKey?: boolean; ctrlKey?: boolean; metaKey?: boolean }): ScrubKeyAction | null {
+  if (modifiers && (modifiers.altKey || modifiers.ctrlKey || modifiers.metaKey)) return null; // Alt+Left is Back, Cmd+Left is line start: the browser's
   switch (key) {
     case 'ArrowLeft':
       return { type: 'step', direction: -1 };

@@ -109,7 +109,7 @@ function Root({ fraction: committedInput, loading = false, onBeginScrub, onEndSc
 
   const onThumbKeyDown = useCallback((event: KeyboardEvent<HTMLElement>) => {
     const now = live.current;
-    const action = resolveScrubKey(event.key, now.committedFraction);
+    const action = resolveScrubKey(event.key, now.committedFraction, event);
     if (!action) return;
     event.preventDefault();
     // During a drag (or while loading) the keys do nothing here, and a host's window listener must not act on them either.

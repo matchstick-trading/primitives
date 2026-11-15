@@ -70,7 +70,7 @@ const NAMES: Record<Field, string[]> = {
 
 const normalizeName = (cell: string) => cell.replace(/^﻿/, '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
-function splitLine(line: string, delimiter: string): string[] {
+export function splitLine(line: string, delimiter: string): string[] {
   if (!line.includes('"')) return line.split(delimiter).map((c) => c.trim());
   const cells: string[] = [];
   let cell = '';
@@ -90,7 +90,7 @@ function splitLine(line: string, delimiter: string): string[] {
 }
 
 /** Splits the file into records at line breaks outside quotes, keeping each record's 1-based starting line. */
-function splitRecords(text: string): Array<{ text: string; line: number }> {
+export function splitRecords(text: string): Array<{ text: string; line: number }> {
   if (!text.includes('"')) return text.split(/\r\n|\n|\r/).map((t, i) => ({ text: t, line: i + 1 }));
   const records: Array<{ text: string; line: number }> = [];
   let start = 0;
@@ -114,7 +114,7 @@ function splitRecords(text: string): Array<{ text: string; line: number }> {
  * The delimiter that splits the first row the most. A semicolon or tab wins a near tie with the comma, because in
  * those files every number can carry a decimal comma: `1704205800;1,1;2,2;0,5;1,5;10,0` has as many commas as fields.
  */
-function pickDelimiter(line: string): string {
+export function pickDelimiter(line: string): string {
   const count = (d: string) => line.split(d).length - 1;
   const commas = count(',');
   const other = [';', '\t'].map((d) => [d, count(d)] as const).reduce((best, c) => (c[1] > best[1] ? c : best));
@@ -123,7 +123,8 @@ function pickDelimiter(line: string): string {
 
 function readNumber(cell: string | undefined, decimalComma: boolean): number | null {
   if (cell === undefined || cell === '') return null;
-  const text = decimalComma ? cell.replace(',', '.') : cell;
+  // With point decimals a comma is a thousands separator (12,345 or 4,725.50), read only in that exact grouping.
+  const text = decimalComma ? cell.replace(',', '.') : /^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(cell) ? cell.replace(/,/g, '') : cell;
   if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(text)) return null;
   const n = Number(text);
   return Number.isFinite(n) ? n : null; // 1e999
@@ -137,20 +138,32 @@ function fromEpoch(n: number): number | null {
   return null;
 }
 
-const ISO = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2})(\.\d+)?)?)?\s*(Z|[+-]\d{2}:?\d{2})?$/i;
+const ISO = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2})(\.\d+)?)?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?$/i;
 const CLOCK = /^(\d{1,2}):?(\d{2})(?::?(\d{2}))?$/;
+const COMPACT = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?$/;
+
+/** A compact stamp (YYYYMMDDHHMM or YYYYMMDDHHMMSS) as an ISO date-time, or null when the digits are not a plausible date (then they are a Unix time). */
+function compactStamp(cell: string): string | null {
+  if (cell.length !== 12 && cell.length !== 14) return null;
+  const m = COMPACT.exec(cell);
+  if (!m) return null;
+  const [, y, mo, d, h, mi, s] = m;
+  if (Number(y) < 1900 || Number(y) > 2100 || Number(mo) < 1 || Number(mo) > 12 || Number(d) < 1 || Number(d) > 31 || Number(h) > 23 || Number(mi) > 59 || (s !== undefined && Number(s) > 59)) return null;
+  return `${y}-${mo}-${d} ${h}:${mi}${s === undefined ? '' : `:${s}`}`;
+}
 
 /** A time written without a zone: no Z or offset after a clock time (a Unix time has none to give). */
 function zoneless(cell: string | undefined): boolean {
   const c = (cell ?? '').trim();
-  if (/^\d+(\.\d+)?$/.test(c) && c.length !== 8) return false;
+  if (/^\d+(\.\d+)?$/.test(c) && c.length !== 8 && compactStamp(c) === null) return false;
   return !/[T ]\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?\s*(Z|[+-]\d{2}(:?\d{2})?)$/i.test(c);
 }
 
-function readTime(cell: string | undefined, clock?: string, naiveOffsetMinutes = 0): number | null {
+export function readTime(cell: string | undefined, clock?: string, naiveOffsetMinutes = 0): number | null {
   if (!cell) return null;
-  if (/^\d+(\.\d+)?$/.test(cell) && cell.length !== 8) return fromEpoch(Number(cell));
-  const m = ISO.exec(clock ? `${cell} ${clock.replace(CLOCK, (_, h, mi, s) => `${h}:${mi}${s ? `:${s}` : ''}`)}` : cell);
+  const compact = clock ? null : compactStamp(cell);
+  if (compact === null && /^\d+(\.\d+)?$/.test(cell) && cell.length !== 8) return fromEpoch(Number(cell));
+  const m = ISO.exec(clock ? `${cell} ${clock.replace(CLOCK, (_, h, mi, s) => `${h}:${mi}${s ? `:${s}` : ''}`)}` : compact ?? cell);
   if (!m) return null;
   const [, y, mo, d, h = '0', mi = '0', s = '0', frac = '', zone] = m;
   const month = Number(mo) - 1;
@@ -160,7 +173,7 @@ function readTime(cell: string | undefined, clock?: string, naiveOffsetMinutes =
   if (zone && zone.toUpperCase() !== 'Z') {
     const sign = zone[0] === '-' ? -1 : 1;
     const digits = zone.slice(1).replace(':', '');
-    const [zh, zm] = [Number(digits.slice(0, 2)), Number(digits.slice(2))];
+    const [zh, zm] = [Number(digits.slice(0, 2)), Number(digits.slice(2) || 0)];
     if (zh > 23 || zm > 59) return null; // +99:99
     t -= sign * (zh * 60 + zm) * 60_000;
   } else if (!zone) t -= naiveOffsetMinutes * 60_000;
@@ -182,9 +195,9 @@ function mapColumns(header: string[]): Partial<Record<Field, number>> {
     const i = find(NAMES[field], taken);
     if (i >= 0) { map[field] = i; taken.add(i); }
   }
-  // An exact name first, so `Volume USD, Volume` charts Volume; then any other vol... column.
+  // An exact name first, so `Volume USD, Volume` charts Volume; then any other volume... column (not volatility or vol change).
   let vol = find(NAMES.volume, taken);
-  if (vol < 0) vol = names.findIndex((n, idx) => !taken.has(idx) && n.startsWith('vol'));
+  if (vol < 0) vol = names.findIndex((n, idx) => !taken.has(idx) && /^volume( |$)/.test(n));
   if (vol >= 0) { map.volume = vol; taken.add(vol); }
   const date = find(NAMES.date, taken);
   const clock = date >= 0 ? find(NAMES.clock, taken) : -1;
@@ -197,16 +210,19 @@ function mapColumns(header: string[]): Partial<Record<Field, number>> {
   return map;
 }
 
-export function parseBarsCsv(text: string, options: CsvBarsOptions = {}): CsvBarsResult {
+export function parseBarsCsv(text: string, options: CsvBarsOptions | null = {}): CsvBarsResult {
+  options = options ?? {};
   const maxRows = options.maxRows ?? 500_000;
   const errors: CsvBarsError[] = [];
   const notes: CsvBarsNote[] = [];
+  if (typeof text !== 'string') return { bars: [], errors: [{ line: 0, message: 'The input is not text.' }], notes };
   const lines = splitRecords(text);
   const firstLine = lines.findIndex((l) => l.text.trim() !== '');
   if (firstLine < 0) return { bars: [], errors: [{ line: 0, message: 'The file is empty.' }], notes };
 
   const delimiter = pickDelimiter(lines[firstLine]!.text);
-  const decimalComma = delimiter !== ',';
+  let decimalComma = delimiter !== ',';
+  const commaDelimiterFile = decimalComma;
   const first = splitLine(lines[firstLine]!.text, delimiter);
   // No header when the first row is already a bar: a time (ISO or Unix) and four prices.
   const offset = Number.isFinite(options.utcOffsetMinutes) ? (options.utcOffsetMinutes as number) : 0;
@@ -224,6 +240,16 @@ export function parseBarsCsv(text: string, options: CsvBarsOptions = {}): CsvBar
     }
   }
   if (map.volume === undefined) notes.push('no-volume');
+  // A semicolon or tab file whose prices carry decimal points writes its decimals with points, so a comma there is a thousands separator.
+  if (decimalComma) {
+    const priceCols = (['open', 'high', 'low', 'close'] as const).map((f) => map[f]!);
+    for (let i = headerless ? firstLine : firstLine + 1, seen = 0; i < lines.length && seen < 100; i++) {
+      if (lines[i]!.text.trim() === '') continue;
+      seen++;
+      const cells = splitLine(lines[i]!.text, delimiter);
+      if (priceCols.some((c) => /^[+-]?\d+\.\d+$/.test(cells[c] ?? ''))) { decimalComma = false; break; }
+    }
+  }
 
   let naive = 0;
   const rows: Array<{ bar: CandleBar; line: number; cells: string[] }> = [];
@@ -246,6 +272,14 @@ export function parseBarsCsv(text: string, options: CsvBarsOptions = {}): CsvBar
       continue;
     }
     if (map.date !== undefined || zoneless(cells[map.time!])) naive++;
+    // The file's prices use points, so a price like 0,5 or 1,09 (a comma that is not a thousands group) is a comma decimal: refuse it rather than read it as 5 or 109. A bare 4,725 stays a thousands price.
+    if (commaDelimiterFile && !decimalComma) {
+      const prices = (['open', 'high', 'low', 'close'] as const).map((f) => cells[map[f]!] ?? '');
+      if (prices.some((c) => /^[+-]?\d*,\d+$/.test(c) && !/^[+-]?\d{1,3}(,\d{3})+$/.test(c))) {
+        errors.push({ line, message: 'This row writes a price with a decimal comma, but earlier rows use decimal points. Use one convention for the whole file.' });
+        continue;
+      }
+    }
     const [open, high, low, close] = (['open', 'high', 'low', 'close'] as const).map((f) => readNumber(cells[map[f]!], decimalComma));
     const volume = map.volume === undefined ? 0 : readNumber(cells[map.volume], decimalComma);
     if (open === null || high === null || low === null || close === null || volume === null) {
@@ -281,9 +315,9 @@ export function parseBarsCsv(text: string, options: CsvBarsOptions = {}): CsvBar
   errors.sort((a, b) => a.line - b.line);
   const result: CsvBarsResult = { bars, errors, notes };
   result.zoneless = naive;
-  if (options.extraColumns && !headerless) {
+  if (options.extraColumns) {
     const skipped: string[] = [];
-    result.extras = readExtraColumns(first, map, kept, decimalComma, skipped);
+    result.extras = readExtraColumns(first, map, kept, decimalComma, skipped, headerless);
     result.skippedColumns = skipped;
   }
   return result;
@@ -292,11 +326,14 @@ export function parseBarsCsv(text: string, options: CsvBarsOptions = {}): CsvBar
 const NO_VALUE = /^(-|--|na|n\/a|nan|null|none)$/i;
 
 /** Every column the bars did not use whose cells are all numbers or "no value" words (an all-"no value" column is kept); a column with any other text is left out. */
-function readExtraColumns(header: string[], map: Partial<Record<Field, number>>, rows: Array<{ cells: string[] }>, decimalComma: boolean, skipped: string[]): CsvExtraColumn[] {
+function readExtraColumns(header: string[], map: Partial<Record<Field, number>>, rows: Array<{ cells: string[] }>, decimalComma: boolean, skipped: string[], headerless: boolean): CsvExtraColumn[] {
   const used = new Set(Object.values(map).filter((i): i is number => i !== undefined));
   const out: CsvExtraColumn[] = [];
-  header.forEach((name, col) => {
-    if (used.has(col) || name.trim() === '') return;
+  header.forEach((written, col) => {
+    if (used.has(col)) return;
+    // A header-less file or a blank header has no name to give, so the column is called by its position.
+    const name = headerless || written.trim() === '' ? `Column ${col + 1}` : written;
+    const blank = headerless || written.trim() === '';
     const values: Array<number | null> = [];
     for (const row of rows) {
       const cell = (row.cells[col] ?? '').trim();
@@ -305,7 +342,7 @@ function readExtraColumns(header: string[], map: Partial<Record<Field, number>>,
       if (n === null) { skipped.push(name.trim()); return; } // text in the column: not a series, and the notes say so
       values.push(n);
     }
-    if (values.length > 0) out.push({ header: name, values }); // a named column that is all "no value" stays, as unknown, rather than vanishing
+    if (values.length > 0 && !(blank && values.every((v) => v === null))) out.push({ header: name, values }); // a named column that is all "no value" stays, as unknown, rather than vanishing
   });
   return out;
 }

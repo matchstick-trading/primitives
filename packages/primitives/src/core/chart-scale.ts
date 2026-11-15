@@ -170,7 +170,7 @@ export function chartFrame(bars: readonly CandleBar[], viewport: ChartViewport, 
   const indexAt = (px: number) => px / barWidth + start - 0.5;
   const y = (price: number) => priceBottom - ((price - priceMin) / priceRange) * priceSpan;
   const priceAt = (py: number) => priceMin + ((priceBottom - py) / priceSpan) * priceRange;
-  const volumeY = (volume: number) => volumeBottom - (Math.max(0, volume) / volumeMax) * (volumeBottom - volumeTop);
+  const volumeY = (volume: number) => !Number.isFinite(volume) ? volumeBottom : volumeBottom - (Math.max(0, volume) / volumeMax) * (volumeBottom - volumeTop);
 
   return {
     width, height, plotWidth, plotHeight, viewport: { start, end }, first, last, barWidth,
@@ -190,7 +190,7 @@ function safeInclude(include: (visible: { first: number; last: number }) => read
 
 const intervals = new WeakMap<readonly CandleBar[], { length: number; first: number; last: number; interval: number }>();
 
-const SAMPLE_OVER = 20_000;
+const SAMPLE_OVER = 2_000;
 
 /** The usual gap between bars in milliseconds (the median), or 60 000 when there are fewer than two bars. */
 export function barInterval(bars: readonly CandleBar[]): number {
@@ -201,8 +201,8 @@ export function barInterval(bars: readonly CandleBar[]): number {
   if (known && known.length === bars.length && known.first === first && known.last === last) return known.interval;
   // Every gap, not a sample: gaps that repeat (a weekend every fifth bar) would fool a sample taken at a fixed stride.
   // Sorted once per series and remembered, so the drawings and the readout can ask as often as they like.
-  // A series over SAMPLE_OVER bars is sampled instead (20 000 gaps picked by a fixed pseudo-random sequence, the same
-  // every time): sorting a million gaps on every fresh array cost more than the rest of the render. Random places cannot
+  // A series over SAMPLE_OVER bars is sampled instead (2 000 gaps picked by a fixed pseudo-random sequence, the same
+  // every time): sorting a million gaps on every fresh array cost more than the rest of the render, and 20 000 sampled gaps still cost about 2 ms per fresh array (DEV-2026-11-548); a median needs far fewer. Random places cannot
   // line up with a gap that repeats at any period (a weekend every fifth bar, a session break every 390, every 53rd).
   const total = bars.length - 1;
   const count = total > SAMPLE_OVER ? SAMPLE_OVER : total;

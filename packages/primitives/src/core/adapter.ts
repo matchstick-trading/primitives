@@ -54,11 +54,13 @@ function idFromHeader(header: string, taken: Set<string>): string {
 export const csvAdapter: DataAdapter<string, CsvAdapterOptions> = {
   name: 'csv',
   version: '1',
-  read(text, options = {}) {
+  read(text, opts) {
+    const options = opts ?? {};
     const given = options.utcOffsetMinutes;
     if (given !== undefined && !(Number.isInteger(given) && given >= -720 && given <= 840)) {
       return { adapter: { name: 'csv', version: '1' }, bars: [], series: [], errors: [{ line: 0, message: `utcOffsetMinutes must be a whole number of minutes from -720 to 840, not ${String(given)}, so nothing was read.` }], notes: [] };
     }
+    if (typeof text !== 'string') return { adapter: { name: 'csv', version: '1' }, bars: [], series: [], errors: [{ line: 0, message: 'The input is not text, so nothing was read.' }], notes: [] };
     const parsed = parseBarsCsv(text, { ...options, extraColumns: true });
     const offset = Number.isFinite(options.utcOffsetMinutes) ? (options.utcOffsetMinutes as number) : 0;
     const notes: string[] = parsed.notes.map((n) => NOTES[n]);

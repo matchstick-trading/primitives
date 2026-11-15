@@ -1,5 +1,5 @@
 // Core without React: parse a bars CSV, then compute the chart frame a renderer would draw.
-// Synthetic data only. Run: node examples/csv-to-chart-frame.mjs
+// Synthetic data only. Run: node examples/csv-to-chart-frame.mjs (in a clone, run `npm run build` first; the npm copy is already built)
 import { parseBarsCsv, describeBarsCsv, chartFrame, lastBars } from '@matchstick-trading/primitives/core';
 
 const csv = [
