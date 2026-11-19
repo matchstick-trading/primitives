@@ -39,6 +39,7 @@ Say these to the user before they plan around the package. The full list is http
 ## Where to look when something does not work
 
 - Styling looks absent: import `@matchstick-trading/primitives/tokens.css` once. From 0.0.11 it draws the chart parts in the page's text colour; before that, style the `data-` attributes yourself. Your own CSS wins.
-- A study line is invisible: from 0.0.11 `tokens.css` strokes it; on 0.0.10 the study parts draw SVG with no stroke or fill and the README has the `data-part='study-line'` rule and the nesting (`Study.Root` inside `Chart.Root`, around `Chart.Plot` and `Study.Legend`).
-- A chart is blank: it needs a non-empty, ascending list of bars with unique `timestamp` values in milliseconds.
+- A study line is invisible: a numeric `t` in `points` draws nothing and logs nothing (`Panels.List` shows a note; `t` must be ISO-8601 text ending in `Z`). Otherwise, from 0.0.11 `tokens.css` strokes it; on 0.0.10 the study parts draw SVG with no stroke or fill and the README has the `data-part='study-line'` rule and the nesting (`Study.Root` inside `Chart.Root`, around `Chart.Plot` and `Study.Legend`).
+- A chart is blank: the list is empty, or its bars have a missing or non-finite time or price (those bars are left out; in development a console warning says how many and why). Bar `timestamp` is a number in Unix milliseconds.
+- A chart draws but looks wrong: order and duplicates are not checked. Bars in descending time order draw with the time axis running backwards and no warning; bars that share a timestamp draw, and React logs duplicate-key errors. Sort ascending and drop duplicate timestamps before you pass the list.
 - Questions and issues: https://github.com/matchstick-trading/primitives/issues

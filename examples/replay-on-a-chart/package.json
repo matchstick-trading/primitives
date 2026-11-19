@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": { "dev": "vite", "build": "tsc --noEmit && vite build" },
   "dependencies": {
-    "@matchstick-trading/primitives": "0.0.12",
+    "@matchstick-trading/primitives": "0.0.13",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },

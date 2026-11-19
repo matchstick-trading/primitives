@@ -18,7 +18,7 @@ orders: there is no order entry, account or trading feature here.
 ## Status
 
 - Developer preview. Names, parts and data shapes can change, and there is no promise of updates or support.
-- Install: `npm install @matchstick-trading/primitives` (React 18 or 19 is a peer dependency).
+- Install: `npm install @matchstick-trading/primitives` (React is a peer dependency). Checked with React 18.3 and 19; the peer range also allows 18.0 to 18.2, which are unchecked.
 - Licence: Apache-2.0. The source in `src/` ships with the package and you may use it under the terms in `LICENSE`.
   The licence covers this package only, not Matchstick Replay or any other Matchstick product.
 
@@ -88,7 +88,7 @@ Bars and series points write time differently, on purpose:
 | A bar's `timestamp` (`Chart.Root bars`) | a number, Unix **milliseconds** | `1700000000000` |
 | A series point's `t` (`Study.Line points`, `Panels.Root`) | text, **ISO-8601 UTC** ending in `Z` | `2023-11-14T22:13:20Z` |
 
-`new Date(ms).toISOString()` turns the first into the second, and `pointsFromValues(bars, values)` does it for a whole series. In development the chart tells you when it gets this wrong: a console warning such as "3 of 3 bars left out of the chart: 3 with a timestamp that is text", or "bar timestamps look like Unix seconds" (seconds draw January 1970), and a series with a numeric `t` names the format it wanted. Production builds stay silent. Nothing is converted for you.
+`new Date(ms).toISOString()` turns the first into the second, and `pointsFromValues(bars, values)` does it for a whole series. In development the chart tells you when it gets this wrong: a console warning such as "3 of 3 bars left out of the chart: 3 with a timestamp that is text", or "bar timestamps look like Unix seconds" (seconds draw January 1970), and a series with a numeric `t` is told so in `Panels.List` (a note under the series). `Study.Line` given a numeric `t` draws nothing and says nothing, so check `t` is text ending in `Z` when a study line is missing. Production builds stay silent. Nothing is converted for you.
 
 ### Add a scrubber
 
@@ -144,17 +144,80 @@ export function ReplayScrubber() {
 `Chart.TradeMarkers` goes inside `Chart.Plot` after the candles and draws one mark per trade, on its bar, at its price: a triangle up for a buy, down for a sell, a diamond when the side is unknown. It only displays what you give it. Read a trades file (columns `time`, `price`, `size`, `side`) with `readTradesCsv`; it names a bad row by its line in the file and keeps prices and sizes as the exact text written.
 
 ```tsx
+import { useState } from 'react';
 import { Chart, readTradesCsv } from '@matchstick-trading/primitives';
+import { bars } from './FirstChart'; // the bars from the first chart above
 
-const { rows: trades, issues } = readTradesCsv(await file.text()); // issues: [{ line, message }]
-
-<Chart.Plot>
-  <Chart.Candles />
-  <Chart.TradeMarkers trades={trades} />
-</Chart.Plot>
+export function ChartWithTrades() {
+  const [trades, setTrades] = useState<ReturnType<typeof readTradesCsv>['rows']>([]);
+  const [issues, setIssues] = useState<{ line: number; message: string }[]>([]);
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    const read = readTradesCsv(await file.text()); // issues: [{ line, message }]
+    setTrades(read.rows);
+    setIssues(read.issues);
+  };
+  return (
+    <>
+      <input type="file" accept=".csv" aria-label="Trades CSV" onChange={(e) => void onFile(e.target.files?.[0])} />
+      {issues.length > 0 && <p role="status">Line {issues[0].line}: {issues[0].message}</p>}
+      <Chart.Root bars={bars} synthetic aria-label="Synthetic bars with your trades">
+        <Chart.Plot>
+          <Chart.Candles />
+          <Chart.TradeMarkers trades={trades} />
+          <Chart.PriceAxis />
+          <Chart.TimeAxis />
+        </Chart.Plot>
+      </Chart.Root>
+    </>
+  );
+}
 ```
 
 Colour the marks with `[data-part='trade-marker'][data-side='buy'] { fill: ... }` (and `sell`, `unknown`). A trade with no bar to sit on (before the first bar, after the last, or in a gap) is left out; `data-outside` on the marker group counts them. Thousands of trades are fine: each side is one path and only the markers in view are built.
+
+### Show a receipt
+
+`Receipt` is a card for one comparison of two moments in a recording. It prints what you give it: the dataset and symbol, the two times, how many events lie between them, the digests of the source and of each state, the result hash, and whether your own recompute from the start reproduced the same two states and result hash. It does not compute any of these: the digests, the hash and `recomputeMatch` come from your code. It can copy the whole receipt or just the result hash (Enter or `y` on the card copies the hash), and says whether the copy worked. Data that is not synthetic must carry a `shareNote`.
+
+```tsx
+import { Receipt, type ReceiptData } from '@matchstick-trading/primitives';
+
+// Made-up values. Your code produces the digests and the hash, and says whether a recompute matched.
+const receipt: ReceiptData = {
+  dataset: 'synthetic-session-1',
+  symbol: 'SYN-USD',
+  synthetic: true,
+  a: '2026-01-07T19:10:00Z',
+  b: '2026-01-07T19:40:00Z',
+  eventsBetween: 412,
+  sourceDigest: 'src-0001',
+  stateDigestA: 'state-a-0001',
+  stateDigestB: 'state-b-0001',
+  resultHash: 'result-0001',
+  engineVersion: 'example',
+  levelsDiffer: 7,
+  recomputeMatch: true,
+};
+
+export function ReceiptCard() {
+  return (
+    <Receipt.Root receipt={receipt} receiptText="Synthetic session, 19:10 to 19:40, result hash result-0001.">
+      <dl>
+        <Receipt.Field label="Dataset">{receipt.dataset}</Receipt.Field>
+        <Receipt.Field label="Events between">{receipt.eventsBetween}</Receipt.Field>
+        <Receipt.Field label="Result hash"><Receipt.Hash of="result" /></Receipt.Field>
+      </dl>
+      <Receipt.Verdict />
+      <Receipt.CopyButton what="hash" />
+      <Receipt.CopyButton what="receipt" />
+      <Receipt.ShareNote />
+    </Receipt.Root>
+  );
+}
+```
+
+`Receipt.Verdict` says "Same two states and the same result hash." or "Did not reproduce the same result." (change the words with `matchText` and `mismatchText`). A match says your recompute repeated, not that anything is correct.
 
 ### Add a depth profile
 
@@ -249,6 +312,7 @@ A series is a list of `{ t, kind, v? }` points, not a bare array: `t` is an ISO-
 ```ts
 import { csvAdapter, toSeriesSet, validateSeriesSet, report } from '@matchstick-trading/primitives/core';
 
+declare const text: string; // the CSV text, for example `await file.text()`
 const read = csvAdapter.read(text, { utcOffsetMinutes: 0 }); // bars, extra numeric columns as series, errors, plain-language notes
 const set = toSeriesSet(read);
 const problems = validateSeriesSet(set);                     // every issue in one pass
@@ -286,7 +350,7 @@ export function ChartWithEma() {
 }
 ```
 
-Like the candles, the study parts draw SVG with no stroke or fill, so add this too:
+With `tokens.css` imported (as in the first chart) a study line is already stroked in the chart's synthetic colour, so the line above draws as it is. Add this only to choose your own colours:
 
 ```css
 [data-part='study-line'] { stroke: #7a5cff; stroke-width: 1.25; fill: none; }
@@ -411,7 +475,7 @@ const panels = [{ id: 'rsi', label: 'RSI panel' }];
 
 export function PanelChart() {
   const series = useMemo(() => [
-    { id: 'ema50', label: 'EMA 50', points: pointsFromValues(bars, ema(bars, 50)) }, // starts in main, on the price scale
+    { id: 'ema10', label: 'EMA 10', points: pointsFromValues(bars, ema(bars, 10)) }, // starts in main, on the price scale
     { id: 'rsi14', label: 'RSI 14', points: pointsFromValues(bars, rsi(bars, 14)), panel: 'rsi' }, // starts in a band of its own
   ], []);
   return (
@@ -457,7 +521,7 @@ A tap on a series line selects it (`{ kind: 'series', id }`, one selection at a 
 | `Toolbar`, `Menu`, `Submenu` | A toolbar that is one tab stop (arrow keys, Home, End, Escape back to the chart); a button that opens a menu; a menu item that opens another. Tap or key, never hover. |
 | `Fullscreen` | `Frame` (a wrapper; `data-fullscreen` while expanded) and `Toggle` (a button with `aria-pressed`). The browser's full screen where it has one, a full-page fallback where it does not. |
 | `Transport`, `Scrubber`, `Cursor` | Replay controls, a scrub bar and a cursor you can step through events. |
-| `DepthProfile`, `DiffTable`, `Tape`, `Ladder`, `Receipt` | A depth view, a sortable table that shows what changed, the latest trades newest first (rows hold still while you read), a price ladder with size bars and a spread row, and a verifiable receipt. |
+| `DepthProfile`, `DiffTable`, `Tape`, `Ladder`, `Receipt` | A depth view, a sortable table that shows what changed, the latest trades newest first (rows hold still while you read), a price ladder with size bars and a spread row, and a receipt card for one comparison of two moments (the digests and result hash you give it, and whether your recompute reproduced them). |
 | `SymbolSearch`, `CsvDrop` | A search over a list you supply, and a drop zone that reads a CSV of bars. |
 | `Notice` | A status message with a kind. |
 
@@ -591,7 +655,7 @@ the studies (`ema`, `sma`, `rsi`, `atr`, `bollinger`, `vwap`), the volume profil
 
 ## Your own data
 
-Give `Chart.Root` a list of bars (a bar with a missing or non-finite time or price is left out rather than drawn, so filter such bars yourself before computing a study, or its values will not line up), or read a CSV with `parseBarsCsv` (or the `CsvDrop` part) and pass the result. Data
+Give `Chart.Root` a list of bars in ascending time order with one bar per timestamp (the chart does not check either: descending bars draw with the time axis running backwards, and bars sharing a timestamp draw and make React log duplicate-key errors, with no Primitives warning). A bar with a missing or non-finite time or price is left out rather than drawn, so filter such bars yourself before computing a study, or its values will not line up), or read a CSV with `parseBarsCsv` (or the `CsvDrop` part) and pass the result. Data
 from a third party stays theirs and is not advice. Use your own data and feeds freely in your own app. Before you paste market data into anything you publish or share (docs, issues, screenshots, examples), check the data provider's terms; the examples in this package use made-up data.
 
 ## Tokens
@@ -659,7 +723,7 @@ The colours that failed on white in 0.0.2 (synthetic 2.58, bid 2.63, ask 2.04, w
 - `README.md`, `AGENTS.md`, `llms.txt`: this file, how an agent should use the package, and a short index.
 - `dist/`: compiled JavaScript and `.d.ts` declarations for `.` and `./core`.
 - `src/tokens.css`, imported as `@matchstick-trading/primitives/tokens.css`: the design tokens (`--mt-*`), including `--mt-touch-target`, the light preset and the drawing state tokens (see Tokens).
-- `examples/`: small runnable files with synthetic data (`node examples/studies.mjs`).
+- `examples/`: small runnable files with synthetic data. In your own project: `node node_modules/@matchstick-trading/primitives/examples/studies.mjs`. In a clone of this repository: `cd packages/primitives && npm ci && npm run build`, then `node examples/studies.mjs`. These four use the core without React: `csv-to-chart-frame.mjs`, `csv-to-tape.mjs`, `live-bars.mjs` and `studies.mjs`.
 
 The TypeScript source in `src/` (without its tests) ships too, under the same licence.
 

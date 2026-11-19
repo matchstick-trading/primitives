@@ -5,10 +5,13 @@ import { bars, trades } from './data';
 import { TradeMarks } from './TradeMarks';
 
 const last = bars.length - 1;
+// Start with 12 bars already in view, so the first chart is a row of candles and not one stretched candle.
+// The first trade is on bar 13, so it still arrives during the replay.
+const START = 11;
 
 export default function App() {
   // The replay is one number: how many bars have been revealed. The chart gets the bars up to it.
-  const [bar, setBar] = useState(0);
+  const [bar, setBar] = useState(START);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
 
@@ -42,8 +45,8 @@ export default function App() {
       </Chart.Root>
       <Scrubber.Root
         fraction={bar / last}
-        onCommit={(fraction) => setBar(Math.round(fraction * last))}
-        onStep={(direction) => setBar((b) => Math.min(last, Math.max(0, b + direction)))}
+        onCommit={(fraction) => setBar(Math.max(START, Math.round(fraction * last)))}
+        onStep={(direction) => setBar((b) => Math.min(last, Math.max(START, b + direction)))}
       >
         <Scrubber.Track>
           <Scrubber.Thumb label="Replay position" />
@@ -51,9 +54,9 @@ export default function App() {
       </Scrubber.Root>
       <Transport.Root playing={playing} aria-label="Replay controls">
         <Transport.Group>
-          <Transport.Start onClick={() => { setPlaying(false); setBar(0); }}>Start</Transport.Start>
-          <Transport.Previous onClick={() => setBar((b) => Math.max(0, b - 1))}>Back</Transport.Previous>
-          <Transport.Play onClick={() => { if (bar >= last) setBar(0); setPlaying((p) => !p); }}>{playing ? 'Pause' : 'Play'}</Transport.Play>
+          <Transport.Start onClick={() => { setPlaying(false); setBar(START); }}>Start</Transport.Start>
+          <Transport.Previous onClick={() => setBar((b) => Math.max(START, b - 1))}>Back</Transport.Previous>
+          <Transport.Play onClick={() => { if (bar >= last) setBar(START); setPlaying((p) => !p); }}>{playing ? 'Pause' : 'Play'}</Transport.Play>
           <Transport.Next onClick={() => setBar((b) => Math.min(last, b + 1))}>Forward</Transport.Next>
         </Transport.Group>
         <Transport.Speed speed={speed} options={[1, 2, 4]} onSpeedChange={setSpeed} format={(x) => `${x}x`} />
