@@ -2,7 +2,7 @@
 
 A small, runnable example: the trader-facing screen of a trading app, with a chart, a price ladder and a tape, fed by a
 made-up broker feed. It is the shape you would use on top of a back end that has an API and no screen of its own. It
-uses the published package, `@matchstick-trading/primitives` 0.0.12, and nothing else but React and Vite. All data is
+uses the published package, `@matchstick-trading/primitives` 0.0.13, and nothing else but React and Vite. All data is
 made up.
 
 [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/broker-screen) (no account needed), or run it locally:

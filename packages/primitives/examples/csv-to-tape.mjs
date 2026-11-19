@@ -1,6 +1,6 @@
 // Your trades CSV on the Tape: read a file of trades, check every row, and say which line is wrong.
 // Synthetic data only (examples/synthetic-trades.csv, one bad line on purpose).
-// Run: node examples/csv-to-tape.mjs [path-to-trades.csv] (in a clone, run `npm run build` first; the npm copy is already built)
+// Run: node examples/csv-to-tape.mjs [path-to-trades.csv] (in a clone: `cd packages/primitives && npm ci && npm run build` first; from your own project: `node node_modules/@matchstick-trading/primitives/examples/<file>`, already built)
 // Columns, in this order: time (ISO-8601 UTC, ending in Z), price, size, side (buy, sell or unknown).
 import { readFileSync } from 'node:fs';
 import { readTape, tapeSummary, newestFirst } from '@matchstick-trading/primitives/core';

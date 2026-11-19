@@ -1,7 +1,7 @@
 # Replay on a chart
 
 A small, runnable example: replay a made-up session bar by bar, with a bot's trades appearing on the chart as the replay
-passes them. It uses the published package, `@matchstick-trading/primitives` 0.0.12, and nothing else but React and Vite.
+passes them. It uses the published package, `@matchstick-trading/primitives` 0.0.13, and nothing else but React and Vite.
 All data is made up.
 
 [Open in StackBlitz](https://stackblitz.com/github/matchstick-trading/primitives/tree/main/examples/replay-on-a-chart) (no account needed), or run it locally:

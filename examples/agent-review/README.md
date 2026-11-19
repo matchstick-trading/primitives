@@ -1,7 +1,7 @@
 # Review an agent’s trades
 
 A small, runnable example: an AI agent suggests trades on a made-up session, you replay the session, and you accept or
-reject each suggestion as it appears. It uses the published package, `@matchstick-trading/primitives` 0.0.12, and nothing
+reject each suggestion as it appears. It uses the published package, `@matchstick-trading/primitives` 0.0.13, and nothing
 else but React and Vite. All data is made up. There is no model, no network and no broker: the "agent" is a list in
 `src/data.ts`, and nothing you click is sent anywhere.
 
