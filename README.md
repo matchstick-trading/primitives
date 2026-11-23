@@ -4,19 +4,23 @@ Headless, keyboard-first parts for trading screens: candles and volume, studies,
 a replay transport, depth and symbol search. The logic is a plain-TypeScript core with no dependencies; React
 parts sit on top of it.
 
-**Docs and live demos:** https://ui.matchstick.trading
+![A tape and a price ladder moving together on one made-up feed](assets/primitives-live.gif)
+
+- **Try it live** (made-up data, no sign-in): https://ui.matchstick.trading/docs/live
+- **Quickstart:** [`packages/primitives/README.md`](packages/primitives/README.md) has install, a first chart and the other parts, each with code you can paste.
+- **Docs and live demos:** https://ui.matchstick.trading
 
 > **Developer preview, v0.0.13.** Parts, names and data shapes can change in the next version without a migration
 > path. Nothing here promises later versions, updates or support.
 
 ## What this repository is for
 
-This repository holds the package source (`packages/primitives`), the issue tracker, these notes and small teaching examples.
+This repository holds the package source (`packages/primitives`), the issue tracker, these notes and small teaching examples. Source, examples and issues all live here.
 
 Install the package from npm: `npm install @matchstick-trading/primitives` (React 18 or 19 is a peer dependency).
 
 Licence: Apache-2.0, this package only. Matchstick Replay and the engine are not covered. See
-[`packages/primitives/LICENSE`](packages/primitives/LICENSE).
+[`LICENSE`](LICENSE) (the same file ships in [`packages/primitives/LICENSE`](packages/primitives/LICENSE)).
 
 Open an issue to:
 
